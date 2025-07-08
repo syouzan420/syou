@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Browser (getCanvasInfo,chColors,cvRatio,setAudio
+module Browser (getCanvasInfo,chColors,cvRatio,setAudio,getRanNum
                 ,tcStart,tcEnd,touchIsTrue,localStore,stringToJson,setBmps) where
 
 import Haste(JSString)
@@ -13,6 +13,9 @@ import Haste.LocalStorage(setItem,getItem,removeItem)
 import Haste.Audio(mkSource,newAudio,defaultAudioSettings,AudioSettings(..),Audio)
 import Define (State(swc),Switch(itc),CInfo,LSA(..)
               ,imgfile,wstfile,chrfile,wstAuFile,seFile)
+
+getRanNum :: Int -> IO Int
+getRanNum = ffi "(function(i){return (Math.floor (Math.random() * i))})"
 
 chColors :: [Color]
 chColors = [RGB 200 200 180,RGB 200 255 200,RGB 255 204 153,RGB 255 153 204

@@ -1,6 +1,7 @@
 module Random (getRandomNumIO,getRandomNum,getRan,getRanList) where
 
 import Data.Time.Clock(getCurrentTime,UTCTime(utctDayTime))
+import Browser (getRanNum)
 
 -- get random number(Int) from 0 to (i-1)
 -- input (Number,Generator) -> output (Number,Generator)
@@ -21,18 +22,26 @@ getRandomNum (i,g) =
    in (m,ng)
 
 --
-getRan :: Int -> Int -> IO (Int,Int)
-getRan i g = getRandomNumIO (i,g)
+getRan :: Int -> IO Int
+getRan = getRanNum 
+--getRan i g = getRandomNumIO (i,g)
 
 -- getRanList m i g , m:length of list from which, i:take i of the list
-getRanList :: Int -> Int -> Int -> IO [Int]
-getRanList m = getRanList' [0..(m-1)] 
+getRanList :: Int -> Int -> IO [Int]
+getRanList m = getRanList2 [0..(m-1)] 
 
-getRanList' :: [Int] -> Int -> Int -> IO [Int]
-getRanList' _ 0 _ = return []
-getRanList' il i g = do
-  (ti,g') <- getRan (length il) g
+--getRanList' :: [Int] -> Int -> Int -> IO [Int]
+--getRanList' _ 0 _ = return []
+--getRanList' il i g = do
+--  (ti,g') <- getRan (length il) g
+--  let num = il!!ti
+--  xs <- getRanList' (filter (/=num) il) (i-1) g'
+--  return (num:xs)
+
+getRanList2 :: [Int] -> Int -> IO [Int]
+getRanList2 _ 0 = return []
+getRanList2 il i = do
+  ti <- getRan (length il)
   let num = il!!ti
-  xs <- getRanList' (filter (/=num) il) (i-1) g'
+  xs <- getRanList2 (filter (/=num) il) (i-1) 
   return (num:xs)
-

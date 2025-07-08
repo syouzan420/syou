@@ -19,6 +19,7 @@ initState = State {stage=Nothing
                   ,dcon=Nothing
                   ,qsrc=ltQuestSrc
                   ,cli=[]
+                  ,clik=[]
                   ,lsa=NoLSA
                   ,rgn=0
                   ,swc=initSwitch
@@ -62,6 +63,7 @@ emCon = Con {conID = 0
             ,txtFsz = []
             ,txtCos = []
             ,txtDir = []
+            ,alpDir = []
             ,txts = []
             ,typs = []
             ,picSize = []

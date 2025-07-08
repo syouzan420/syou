@@ -8,15 +8,13 @@ import qualified Data.Map as M
 import Data.Maybe (fromMaybe)
 import Data.List (intercalate)
 import KanjiM (kanmons)
-import Random (getRan)
-import Libs (selectData,insToList,repList)
 import Getting (getExtStages,makeConsRec,makeBtmRec,makeSConRec
                ,makeEConRec,makeSumConsRec,stageChars,stageCharsEx
                ,getCellSize,getChiriPic,getChiriAns)
 import Initialize (emCon)
 import Define (ltQuestSrc,clearScore,mTimeLimit,qTimeLimit,expLst
               ,defGSize,defPlGPos,chPicH
-              ,Pos,Size,GPos,GSize,QSource 
+              ,Pos,Size,GPos,GSize,QSource,Kmon 
               ,State(..),Con(..),Question(..),CRect(..),Gauge(..),Board(..)
               ,Bord(..),Event(..),TxType(..),Stage(..),MType(..),BMode(..)
               ,Obj(..),Role(..),DCon(..),Dir(..),Ken(..),Kan(..),San(..)
@@ -135,8 +133,7 @@ genKamokuMonRect (cW,cH) =
 
 genKamokuMonCons :: Size -> Bool -> Int -> Mdts -> [Con]
 genKamokuMonCons cvSz@(cW,cH) isa qn (Mkn kns) = 
-  let (Kan _ i) = kns!!qn
-      (mon,ans) = kanmons!!i 
+  let (Kan _ (mon,ans)) = kns!!qn
       tx' = if isa then ans else mon 
       tx = show (qn+1) ++ "\r\r" ++ tx'
       fsz = 40
@@ -154,7 +151,8 @@ genKamokuMonCons cvSz@(cW,cH) isa qn (Mkn kns) =
                           ,clEv=NoEvent}
       btcon = genNextCon cvSz 1 ev
       bkcon = genBackCon cvSz 2 bev 
-   in [ncon,btcon,bkcon]
+      chcon = genCheckCon cvSz 3 (mon,ans) 
+   in [ncon,btcon,bkcon,chcon]
 genKamokuMonCons cvSz@(cW,cH) isa qn (Mch kns) = 
   let tken = kns!!qn
       (pNum,mPos) = getChiriPic tken 
@@ -180,9 +178,13 @@ genKamokuMonCons cvSz@(cW,cH) isa qn (Mch kns) =
 genKamokuMonCons cvSz@(cW,cH) isa qn (Msn sns) = 
   let San lv (mon,res) = sns!!qn
       resStr = if res<0 then "－"++tail (show res) else show res
-      ans = mon ++ "\n             = " ++ resStr 
-      tx = show (qn+1) ++ "\n\n" ++ if isa then ans else mon 
-      fsz = 22 
+      ans = mon ++ "\r\r = " ++ resStr 
+      tx = show (qn+1) ++ ".\r\r\r" ++ if isa then ans else mon 
+      fsz 
+        | lv<2 = 28
+        | lv<4 = 25
+        | lv<6 = 22
+        | otherwise = 19
       fsD = fromIntegral fsz
       rec = genKamokuMonRect cvSz 
       nqn = qn+1
@@ -191,14 +193,26 @@ genKamokuMonCons cvSz@(cW,cH) isa qn (Msn sns) =
       bev = if qn==0 then Kamoku lv (length sns) nmdts
                      else KamokuMon isa (qn-1) nmdts 
       ncon = emCon{conID=0,cRec=rec,border=NoBord
-                          ,txtPos=[(-fsD,fsD*3)]
-                          ,txtFsz=[fsz]
-                          ,txtCos=[1],txtDir=[True]
+                          ,txtPos=[(cW*2/3,fsD)]
+                          ,txtFsz=[fsz],alpDir=[True]
+                          ,txtCos=[1]
                           ,txts=[tx],typs=[Normal]
                           ,clEv=NoEvent}
       btcon = genNextCon cvSz 1 ev
       bkcon = genBackCon cvSz 2 bev 
    in [ncon,btcon,bkcon]
+
+genCheckCon :: Size -> Int -> Kmon -> Con
+genCheckCon cvSz@(cW,cH) i km =
+  let mgnX = cW/8; mgnY = cH/2
+      fsz = 25 
+      fsD = fromIntegral fsz
+      ev = Check km 
+   in emCon{conID=i,cRec=CRect mgnX mgnY mgnX (mgnX*2)
+           ,border=Round, borCol = 7, filCol = 2 
+           ,txtPos=[(fsD/4,fsD)],txtFsz=[fsz],txtCos=[7]
+           ,txts = ["覺へた"], typs=[Normal], clEv=ev}
+
 
 genKamokuCons :: Size -> Int -> Int -> Mdts -> [Con]
 genKamokuCons cvSz lv qn mdts = 

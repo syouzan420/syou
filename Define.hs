@@ -14,7 +14,9 @@ type QSource = M.Map Int Char
 
 data Ken = Ken Int Int deriving (Eq,Show) -- Ken ImageNumber(0-7) Position
 
-data Kan = Kan Int Int deriving (Eq,Show) -- Kan kanjiIndex sentenceNumber
+type Kmon = (String,String)
+
+data Kan = Kan Int Kmon deriving (Eq,Show) -- Kan kanjiIndex sentenceNumber
 
 data San = San Int (String,Int)  deriving (Eq,Show) -- San Level (mondai,kotahe)
 
@@ -37,6 +39,7 @@ data MType = NoMission | Mi | Qu deriving (Eq,Show)
 
 data Event = NoEvent | Intro | Notice Nt
            | Kamoku Int Int Mdts | KamokuMon Bool Int Mdts 
+           | Check Kmon 
                                               deriving (Eq,Show)
 
 data Nt = Nt Int Int String Event deriving (Eq,Show)  -- notice data
@@ -101,6 +104,7 @@ data Con = Con {conID :: !Int
                ,ponCos :: ![Int] -- point color indexes
                ,txtFsz :: ![Fsize] -- text font sizes
                ,txtDir :: ![Bool] -- text direction True:Yoko, False:Tate
+               ,alpDir :: ![Bool] -- alphabet and numbers direction True:rotate
                ,txtCos :: ![Int] -- text color indexes
                ,txts :: ![String]
                ,typs :: ![TxType] -- text types (normal or osite)
@@ -127,6 +131,7 @@ data State = State {stage :: !(Maybe Stage)
                    ,dcon :: !(Maybe DCon)
                    ,qsrc :: !QSource -- quest source
                    ,cli :: ![Int] -- clear indexes (learning stages)
+                   ,clik :: ![Int] -- kanji clear indexes
                    ,rgn :: !Int -- Random Number Generator
                    ,lsa :: !LSA -- local storage actions
                    ,swc :: !Switch
@@ -203,7 +208,7 @@ seFile :: String
 seFile = "Audio/se"
 
 storeName :: String
-storeName = "hotumaSave"
+storeName = "syougakuSave"
 
 ltQuestSrc :: QSource 
 ltQuestSrc = M.fromList $ zip [0..] "あかはなまいきひにみうくふぬむえけへねめおこほのもとろそよをてれせゑつるすゆんちりしゐたらさやわ"

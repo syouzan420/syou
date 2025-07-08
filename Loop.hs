@@ -32,6 +32,7 @@ mouseClick c ci bmps aus (x,y) st = do
 inputLoop :: Canvas -> CInfo -> Bmps -> Auds
                    -> Int -> BEvent -> Dir -> State -> IO State 
 inputLoop c ci@(cvSz,_) bmps (oss,ses) cid bev pdr st = do
+  print (clik st)
   let consSt = cons st
       conNum = length consSt
       mbCon = if cid==(-1) then Nothing else findCon cid consSt

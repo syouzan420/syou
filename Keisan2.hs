@@ -23,19 +23,19 @@ siki i = showSiki (makeSiki i)
 
 showSiki :: Siki -> IO (String,Int)
 showSiki s = do
-  ((ss,sr),_) <- showSiki' s 
+  (ss,sr) <- showSiki' s 
   let tk = take 1 ss
   let str = if tk == "＋" then drop 1 ss else ss
   putStrLn str 
   return (str,sr)
 
-showSiki' :: Siki -> IO ((String,Int),Int)
+showSiki' :: Siki -> IO (String,Int)
 showSiki' (K k) = showKou k
 showSiki' (S k s) = do
-  ((ks,kr),g) <- showKou k
-  ((ss,sr),_) <- showSiki' s
-  (wh,ng) <- getRan 2 g 
-  if wh==0 then return ((ks++ss,kr+sr),ng) else return ((ss++ks,sr+kr),ng)
+  (ks,kr) <- showKou k
+  (ss,sr) <- showSiki' s
+  wh <- getRan 2 
+  if wh==0 then return (ks++ss,kr+sr) else return (ss++ks,sr+kr)
 
 
 makeSiki :: Int -> Siki
@@ -65,55 +65,55 @@ makeKo 7 = Ko True False 2 99 1 0   -- -34*8
 makeKo 8 = Ko True False 2 99 0 1   -- -68/2
 makeKo 9 = Ko True False 2 99 1 1   -- -98*5/2
 
-getRanNums :: Int -> Bool -> Int -> Int -> Int -> IO [Int]
-getRanNums i ispn miN maN g = do
-  nums <- getRanList (maN-miN) i g
-  nums2 <- getRanList maN i (g+50)
+getRanNums :: Int -> Bool -> Int -> Int -> IO [Int]
+getRanNums i ispn miN maN = do
+  nums <- getRanList (maN-miN) i
+  nums2 <- getRanList maN i
   let numRes = map (+miN) nums
   let mods = map (`mod` 2) nums2
   let res = zipWith (\n m -> if m==1 && ispn then -n else n) numRes mods
   return res
 
-numsNegate :: Bool -> [Int] -> Int -> IO ([Int],Int)
-numsNegate _ [] g = return ([],g)
-numsNegate ispn (x:xs) g = do
-  (neg,ng) <- getRan 2 g
+numsNegate :: Bool -> [Int] -> IO [Int]
+numsNegate _ [] = return []
+numsNegate ispn (x:xs) = do
+  neg <- getRan 2 
   let negate = ispn && neg==1
       res = if negate then -x else x
-  other <- numsNegate ispn xs ng
-  return (res:fst other,ng)
+  other <- numsNegate ispn xs
+  return (res:other)
 
-showKou :: Kou -> IO ((String,Int),Int)
+showKou :: Kou -> IO (String,Int)
 showKou (A ko) = showKouA ko 
 showKou (B ko si) = do
-  (whi,_) <- getRan 2 0  -- 項*式 にするか 式*項にするか二択
+  whi <- getRan 2  -- 項*式 にするか 式*項にするか二択
   let maheKou = whi==0
-  ((kouStr,kouRes),g) <- showKouA ko
+  (kouStr,kouRes) <- showKouA ko
   (sikiStr,sikiRes) <- showSiki si 
   let kouStr' = if kouRes<0 then "("++kouStr++")" else tail kouStr
   let str = if maheKou then kouStr++"×("++sikiStr++")"
                        else "＋("++sikiStr++")×"++kouStr'
   let res = kouRes*sikiRes
-  return ((str,res),g)
+  return (str,res)
 
-showKouA :: Ko -> IO ((String,Int),Int)
+showKouA :: Ko -> IO (String,Int)
 showKouA (Ko isn ispn miN maN pn dn) = do 
   let ispr = pn>0 || dn>0
-  nums <- getRanNums (pn+1) ispn miN maN 0  
-  (neg,ng) <- getRan 2 0
+  nums <- getRanNums (pn+1) ispn miN maN  
+  neg <- getRan 2
   let negate = isn && neg==1  -- True なら 項自體が負になる
   let prod = product nums     -- かけ算部分をかけた結果
   let sbs = nub $ map fromIntegral $ sobun (fromIntegral prod)
                            -- かけ算の結果を素因数分解して重複しない數のリスト
   let isw = length sbs >= dn   -- 割算の數は因数の數を越えてゐないか
   let wcho = if ispr && isw then choose (length sbs) dn else [] 
-  (chdi,ng2) <- if null wcho then return (0,ng) else getRan (length wcho) ng
+  chdi <- if null wcho then return 0 else getRan (length wcho)
   let numds = if null wcho then sbs else map (sbs !!) (wcho!!chdi)
                                                 -- 割り算に使ふ數字のリスト
   let dn' = length numds                          --最終的な割り算の個数
   let choList = if not ispr then [] else choose (pn+dn') dn'  
   let lnCho = length choList 
-  (pnm,ng3) <- if not ispr then return (0,ng2) else getRan lnCho ng2 
+  pnm <- if not ispr then return 0 else getRan lnCho 
   let dnums = if null choList then [] else choList!!pnm 
       -- [0,2] ==> i.e. 3/4*5/6*7 [0,1] ==> i.e. 5/6/2*4*7 
   let res
@@ -125,7 +125,7 @@ showKouA (Ko isn ispn miN maN pn dn) = do
         | otherwise = let s = showP nums numds dnums 
                        in if negate then "－"++s else "＋"++s 
   putStrLn str
-  return ((str,res),ng3)
+  return (str,res)
 
 
 showP :: [Int] -> [Int] -> [Int] -> String 

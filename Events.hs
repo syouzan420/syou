@@ -8,13 +8,13 @@ import Generate (genNoticeCon
                 ,genSaveData
                 ,genKamokuCons,genKamokuMonCons
                 )
-import Libs (sepByChar,repList)
 import Random (getRanList)
 import Keisan2 (siki)
 import Browser (localStore)
 import Initialize (testCon,initBoard)
+import Libs (delFromList,getIndex)
 import Define (mTimeLimit,clearScore,storeName
-              ,Size
+              ,Size,Kmon
               ,State(..),Event(..),Stage(..),Question(..),Con(..),MType(..)
               ,CRect(..),Score(..),Switch(..),TxType(..),LSA(..),BEvent(..)
               ,Board(..),BMode(..),Sound(..),Ken(..),Kan(..),San(..)
@@ -29,6 +29,7 @@ execEvent :: Size -> Int -> Int -> Event -> State -> State
 execEvent cvSz cid conNum ev st = case ev of
    Intro -> evIntro cvSz st
    Notice nt -> evNotice cvSz nt st
+   Check qn -> evCheck qn st
    KamokuMon isa qn mdts -> evKamokuMon cvSz isa qn mdts st 
    _ -> st
 
@@ -49,28 +50,33 @@ evBoard cvSz cid conNum bev st =
           else st'{board=Board Ko bps bsc bi xev}
     _ -> st{board=nboard}
 
+evCheck :: Kmon -> State -> State
+evCheck km st = let ncon =init (cons st)
+                    i = getIndex km kanmons 
+                 in st{cons=ncon,clik=i:clik st}
+
 evKamokuMon :: Size -> Bool -> Int -> Mdts -> State -> State
 evKamokuMon cvSz isa qn mdts st = st{cons=genKamokuMonCons cvSz isa qn mdts}
 
 evKamoku :: Size -> Int -> Int -> Mdts -> State -> IO State
 evKamoku cvSz _ qn (Mkn kns) st = do 
-  let g = rgn st 
-  let lngMon = length kanmons
+  let clearK = clik st
+  let kanmonsC = foldr delFromList kanmons clearK
+  let lngMon = length kanmonsC
   let qn'
         | qn<1 = 1
         | qn>(lngMon-1) = lngMon-1
         | otherwise = qn
-  nkns <- if null kns then getRanList lngMon qn' g >>= return . map toKan
+  nkns <- if null kns then getRanList lngMon qn' >>= return . map (toKan kanmonsC)
                       else return kns 
   let ncos = genKamokuCons cvSz 0 qn' (Mkn nkns)
   return st{cons=ncos}
 evKamoku cvSz _ qn (Mch kns) st = do 
-  let g = rgn st 
   let qn'
         | qn<1 = 1
         | qn>46 = 46
         | otherwise = qn
-  nkns <- if null kns then getRanList 47 qn' g >>= return . map toKen
+  nkns <- if null kns then getRanList 47 qn' >>= return . map toKen
                       else return kns 
   let ncos = genKamokuCons cvSz 0 qn' (Mch nkns)
   return st{cons=ncos}
@@ -88,8 +94,8 @@ evKamoku cvSz lv qn (Msn sns) st = do
   let ncos = genKamokuCons cvSz lv' qn' (Msn nsns)
   return st{cons=ncos}
 
-toKan :: Int -> Kan
-toKan = Kan 0
+toKan :: [Kmon] -> Int -> Kan
+toKan kmn i = Kan 0 (kmn!!i)
 
 toKen :: Int -> Ken
 toKen i 

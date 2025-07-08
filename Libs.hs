@@ -41,14 +41,14 @@ insToList i tg lst = take i lst ++ [tg] ++ drop i lst
 delFromList :: Int -> [a] -> [a]
 delFromList i ls = if length ls < i+1 then ls else take i ls <> drop (i+1) ls
 
-selectData :: Int -> Int -> [a] -> IO ([a],Int)
-selectData 0 g _ = return ([],g)
-selectData i g rdt = do
+selectData :: Int -> [a] -> IO [a]
+selectData 0 _ = return []
+selectData i rdt = do
   let maxI = length rdt - 1
-  (rn,ng) <- getRan (maxI+1) g
+  rn <- getRan (maxI+1)
   let rdtA = listArray (0,maxI) rdt
       dt = rdtA!rn
       dts = delFromList rn rdt
-  sdts <- selectData (i-1) ng dts
-  return (dt:fst sdts,ng)
+  sdts <- selectData (i-1) dts
+  return (dt:sdts)
 

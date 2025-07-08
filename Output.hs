@@ -47,8 +47,7 @@ startGame c ci bmps st = do
 
 randomMessage :: Canvas -> CInfo -> Bmps -> State -> IO ()
 randomMessage c ci bmps st = do
-  let randomG = rgn st
-  (affText,ng) <- affr randomG
+  affText <- affr
   let affCons = [testCon{txts=[affText]}]
   drawCons c ci bmps affCons 
 
@@ -155,6 +154,8 @@ putCon c cvH bmps con = if not (visible con) then return () else do
       txcol = txtCos con
       txd = txtDir con
       txdir = if null txd then replicate (length txpos) False else txd
+      ald = alpDir con
+      aldir = if null ald then replicate (length txpos) False else ald
       txs = txts con
       tps = typs con
       bcol = chColors!!bocol
@@ -174,12 +175,12 @@ putCon c cvH bmps con = if not (visible con) then return () else do
                                   $ zip pnums pcpos
   mapM_ (\(pcol,(pox,poy)) -> putPoint c (cx+pox,cy+poy) pcol)
                                   $ zip pcos popos
-  mapM_ (\((tx,(td,tp)),((tpx,tpy),(fz,col))) ->
+  mapM_ (\((tx,((td,al),tp)),((tpx,tpy),(fz,col))) ->
           if td then
               putTextH c (chColors!!col) fz (tpx+cx,tpy+cy) tx
                 else
-              putTextV c wbmp (chColors!!col) tp fz (cw,ch) (tpx+cx,tpy+cy) tx)
-                      $ zip (zip txs (zip txdir tps)) (zip txpos (zip txfsz txcol))
+              putTextV c wbmp (chColors!!col) tp al fz (cw,ch) (tpx+cx,tpy+cy) tx)
+                      $ zip (zip txs (zip (zip txdir aldir) tps)) (zip txpos (zip txfsz txcol))
 
 putTextH :: Canvas -> Color -> Fsize -> Point -> String -> IO ()
 putTextH c col fz (x,y) str = do
@@ -190,21 +191,21 @@ putText :: Canvas -> Color -> Fsize -> Point -> String -> IO ()
 putText c col fz (x,y) str = renderOnTop c $ 
     color col $ font (show fz++"px 'Klee One', cursive") $ text (x,y) str
 
-putTextV :: Canvas -> [Bitmap] -> Color -> TxType -> Fsize -> Size 
+putTextV :: Canvas -> [Bitmap] -> Color -> TxType -> Bool -> Fsize -> Size 
                                                 -> Point -> String -> IO ()
-putTextV c wbmp col tp fz sz (p,q) = 
-              putLettersV c wbmp col False tp fz sz q 0 (p,q) 
+putTextV c wbmp col tp al fz sz (p,q) = 
+              putLettersV c wbmp col False tp al fz sz q 0 (p,q) 
 
-putLettersV :: Canvas -> [Bitmap] -> Color -> Bool -> TxType -> Fsize -> Size
-                     -> Double -> Int -> Point -> String -> IO ()
-putLettersV _ _ _ _ _ _ _ _ _ _ [] = return ()
-putLettersV c wbmp col ie tp fz sz@(w,h) miq cln (pd,qd) (x:xs) = do
+putLettersV :: Canvas -> [Bitmap] -> Color -> Bool -> TxType -> Bool -> Fsize
+                     -> Size -> Double -> Int -> Point -> String -> IO ()
+putLettersV _ _ _ _ _ _ _ _ _ _ _ [] = return ()
+putLettersV c wbmp col ie tp al fz sz@(w,h) miq cln (pd,qd) (x:xs) = do
   let fzD = fromIntegral fz 
       ltw = fzD * 1.2
       lth = fzD * 1.1 
       mll = floor (h/lth) - 2 -- max letter length
   case x of 
-    '\r'  -> putLettersV c wbmp col ie tp fz sz miq 0 (pd-ltw,miq) xs
+    '\r'  -> putLettersV c wbmp col ie tp al fz sz miq 0 (pd-ltw,miq) xs
     '：'  -> do
         let (rubi,xxs) = getRubi xs 
             (rpd,rqd) = getRubiPos (pd,qd) miq ltw lth fzD mll
@@ -212,11 +213,12 @@ putLettersV c wbmp col ie tp fz sz@(w,h) miq cln (pd,qd) (x:xs) = do
             rfzD = fromIntegral rfz
             rlth = rfzD * 1.1
         mapM_ (\(i,ch)-> putLet c col rfz 0 (rpd,rqd+i*rlth) ch) (zip [0..] rubi) 
-        putLettersV c wbmp col ie tp fz sz miq cln (pd,qd) xxs
+        putLettersV c wbmp col ie tp al fz sz miq cln (pd,qd) xxs
     _     -> do 
         case tp of
           Normal -> do
-            let ird = x `elem` "ー<>" 
+            let chNum = fromEnum x 
+                ird = x `elem` "ー<>－＋" || (al && chNum > 39 && chNum < 250)
                 rd = if ird then pi/2 else 0
                 (pd',qd') = if ird then (pd+fzD/5,qd-fzD*3/4) else (pd,qd)
                 col' = if not ie || x=='>' then col else chColors!!2
@@ -230,7 +232,7 @@ putLettersV c wbmp col ie tp fz sz@(w,h) miq cln (pd,qd) (x:xs) = do
              | x=='<' = True 
              | x=='>' = False
              | otherwise = ie
-        putLettersV c wbmp col nie tp fz sz miq ncln (npd,nqd) xs
+        putLettersV c wbmp col nie tp al fz sz miq ncln (npd,nqd) xs
 
 getRubiPos :: Point -> Double -> Double -> Double -> Double -> Int -> Point 
 getRubiPos (pd,qd) miq ltw lth fzD mll
