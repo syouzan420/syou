@@ -151,8 +151,8 @@ genKamokuMonCons cvSz@(cW,cH) isa qn (Mkn kns) =
                           ,clEv=NoEvent}
       btcon = genNextCon cvSz 1 ev
       bkcon = genBackCon cvSz 2 bev 
-      chcon = genCheckCon cvSz 3 (mon,ans) 
-   in [ncon,btcon,bkcon,chcon]
+      chcon = [genCheckCon cvSz 3 (mon,ans) | isa]
+   in [ncon,btcon,bkcon]++chcon
 genKamokuMonCons cvSz@(cW,cH) isa qn (Mch kns) = 
   let tken = kns!!qn
       (pNum,mPos) = getChiriPic tken 
@@ -219,7 +219,10 @@ genKamokuCons cvSz lv qn mdts =
   let bcpr = [3,9]
       tcpr = [7,1]
       txpr = ["問題","解答"]
-      evpr = [KamokuMon False 0 mdts,KamokuMon True 0 mdts]
+      evfn b = case mdts of
+                Mkn [] -> NoEvent
+                _ -> KamokuMon b 0 mdts
+      evpr = [evfn False,evfn True]
       bcev = Just Intro 
       cns1 = case mdts of
                 Msn _ -> genUDCons cvSz 3 bcpr tcpr True txpr evpr bcev

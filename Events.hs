@@ -12,7 +12,7 @@ import Random (getRanList)
 import Keisan2 (siki)
 import Browser (localStore)
 import Initialize (testCon,initBoard)
-import Libs (delFromList,getIndex)
+import Libs (getIndex)
 import Define (mTimeLimit,clearScore,storeName
               ,Size,Kmon
               ,State(..),Event(..),Stage(..),Question(..),Con(..),MType(..)
@@ -61,9 +61,10 @@ evKamokuMon cvSz isa qn mdts st = st{cons=genKamokuMonCons cvSz isa qn mdts}
 evKamoku :: Size -> Int -> Int -> Mdts -> State -> IO State
 evKamoku cvSz _ qn (Mkn kns) st = do 
   let clearK = clik st
-  let kanmonsC = foldr delFromList kanmons clearK
+  let kanmonsC = map fst $ filter (\(_,i)-> i `notElem` clearK) (zip kanmons [0..]) 
   let lngMon = length kanmonsC
   let qn'
+        | null kanmonsC = 0
         | qn<1 = 1
         | qn>(lngMon-1) = lngMon-1
         | otherwise = qn
