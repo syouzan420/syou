@@ -22,6 +22,9 @@ data San = San Int (String,Int)  deriving (Eq,Show) -- San Level (mondai,kotahe)
 
 data Mdts = Mch [Ken] | Mkn [Kan] | Msn [San] 
                                   deriving (Eq,Show) -- Mondai Datas
+
+data UpDown = Level | QNum deriving (Eq,Show)
+
 --NoDts
 
 type CInfo = ((Double,Double),(Double,Double))
@@ -39,7 +42,7 @@ data MType = NoMission | Mi | Qu deriving (Eq,Show)
 
 data Event = NoEvent | Intro | Notice Nt
            | Kamoku Int Int Mdts | KamokuMon Bool Int Mdts 
-           | Check Kmon 
+           | Check Int 
                                               deriving (Eq,Show)
 
 data Nt = Nt Int Int String Event deriving (Eq,Show)  -- notice data

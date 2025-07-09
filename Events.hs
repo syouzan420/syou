@@ -12,7 +12,6 @@ import Random (getRanList)
 import Keisan2 (siki)
 import Browser (localStore)
 import Initialize (testCon,initBoard)
-import Libs (getIndex)
 import Define (mTimeLimit,clearScore,storeName
               ,Size,Kmon
               ,State(..),Event(..),Stage(..),Question(..),Con(..),MType(..)
@@ -50,10 +49,8 @@ evBoard cvSz cid conNum bev st =
           else st'{board=Board Ko bps bsc bi xev}
     _ -> st{board=nboard}
 
-evCheck :: Kmon -> State -> State
-evCheck km st = let ncon =init (cons st)
-                    i = getIndex km kanmons 
-                 in st{cons=ncon,clik=i:clik st}
+evCheck :: Int -> State -> State
+evCheck ia st = let ncon =init (cons st) in st{cons=ncon,clik=ia:clik st}
 
 evKamokuMon :: Size -> Bool -> Int -> Mdts -> State -> State
 evKamokuMon cvSz isa qn mdts st = st{cons=genKamokuMonCons cvSz isa qn mdts}
