@@ -1,6 +1,6 @@
 module Generate(genNoticeCon,genBackCon,genIntroCons
                ,genSaveData,genKamokuCons,genKamokuMonCons
-               ,genIchiranCons
+               ,genIchiranCons,genResetNoticeCons
                ,changeBColor,changeFColor
                ,changeText,changeEvent
                ) where
@@ -36,9 +36,8 @@ changeEvent ev co = co{clEv=ev}
 
 genSaveData :: State -> String
 genSaveData st =
-  let clearData = cli st
-      hiScoreData = hiscs st
-   in "\""++intercalate "~" [show clearData,show hiScoreData]++"\""
+  let clearKanjiData = clik st
+   in "\""++intercalate "~" [show clearKanjiData]++"\""
 
 --テキストのみ
 genTextCon :: Int -> CRect -> Int -> Int -> String -> Con
@@ -73,7 +72,7 @@ genUDCons (cW,cH) hsc flco txco txdir txts clev bcev =
       stRecs = map ((\i -> CRect mgnX (mgnY*(i+1)+conH*i) conW conH).fromIntegral)
                                                                          [0..(lng-1)]
       bcon = case bcev of
-                Just bev -> [genBackCon (cW,cH) 2 bev]
+                Just bev -> [genBackCon (cW,cH) lng bev]
                 Nothing -> []
       ncons = zipWith (\i rec -> emCon{conID=i,cRec=rec,border=Round,borCol=1
                 ,filCol=flco!!i ,txtPos=[txpos],txtFsz=[fsz]
@@ -119,8 +118,11 @@ genLevelCons cvSz@(_,cH)  = genUpDownCons cvSz (cH*4/7) Level 9
 genQNumCons :: Size -> Int -> Int -> Mdts -> [Con]
 genQNumCons cvSz@(_,cH) = genUpDownCons cvSz (cH*3/4) QNum 3  
 
+genQNumKCons :: Size -> Int -> Int -> Mdts -> [Con]
+genQNumKCons cvSz@(_,cH) = genUpDownCons cvSz (cH*3/4) QNum 4  
+
 genMakeMKCon :: Size -> Int -> Int -> Mdts -> Con
-genMakeMKCon cvSz@(_,cH) = genMakeMCon cvSz (cH*3/4) 7 
+genMakeMKCon cvSz@(_,cH) = genMakeMCon cvSz (cH*3/4) 8 
 
 genMakeMSCon :: Size -> Int -> Int -> Mdts -> Con
 genMakeMSCon cvSz@(_,cH) = genMakeMCon cvSz (cH*3/5) 7 
@@ -258,7 +260,7 @@ genKamokuCons cvSz lv qn mdts =
                 _     -> genUDCons cvSz 5 bcpr tcpr False txpr evpr bcev
       cns2 = case mdts of
                 Msn _ -> genQNumCons cvSz lv qn mdts ++ genLevelCons cvSz lv qn mdts  
-                _     -> genQNumCons cvSz lv qn mdts 
+                _     -> genQNumKCons cvSz lv qn mdts 
       cnmk = case mdts of
                 Msn _ -> genMakeMSCon cvSz lv qn mdts
                 _     -> genMakeMKCon cvSz lv qn mdts
@@ -297,4 +299,32 @@ genMiniNextCon :: Size -> Int -> Event -> Con
 genMiniNextCon cvSz@(cW,cH) i ev = 
   let conW = cW/12 
    in (genBackCon cvSz i ev){cRec=CRect (cW-conW*3/2) (cH-conW*3/2) conW conW ,txts=["→"]}
+
+genResetNoticeCons :: Size -> [Con] -> [Con]
+genResetNoticeCons cvSz@(cW,cH) cns =
+  let mgnX = cW/3 
+      conW = cW-mgnX*2
+      fsz = 30
+      fsD = fromIntegral fsz
+      ncons = map (changeEvent NoEvent) cns 
+      lng = length cns
+      srCon = genNoticeCon cvSz (Nt lng 3 "スコアをリセットしますか？" NoEvent)
+      srCon' = srCon{txtPos=[(conW-fsD*2,fsD)],txtFsz=[fsz],txtCos=[7]}
+      nCon = genNoticeCon cvSz (Nt (lng+1) 7 "いいえ" Intro)
+      nCon' = nCon{cRec=CRect (cW/20) (cH/3*2) conW (cH/4)
+                  ,txtPos=[(conW-80,40)],txtCos=[0]} 
+      yCon = genNoticeCon cvSz (Nt (lng+2) 7 "はい" Reset) 
+      yCon' = yCon{cRec=CRect (cW/3*2-cW/20) (cH/3*2) conW (cH/4)
+                  ,txtPos=[(conW-80,80)]}
+   in ncons++[srCon',yCon',nCon']
+
+genScrResetCon :: Size -> Int -> Con
+genScrResetCon (cW,cH) i =
+  let mgnX = cW/25*22; mgnY = cH/45
+      conW = cW/12
+      fsD = 32
+      rec = CRect mgnX mgnY conW conW
+      txp = [(fsD/5,fsD/4*3)]
+      bcon = genBackCon (cW,cH) i IsReset
+   in bcon{cRec=rec,txts=["×"],txtPos=txp}
 

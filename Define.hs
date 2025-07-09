@@ -40,7 +40,7 @@ data Stage = StgLetter Int | StgWord Int deriving (Eq,Show)
 
 data MType = NoMission | Mi | Qu deriving (Eq,Show)
 
-data Event = NoEvent | Intro | Notice Nt
+data Event = NoEvent | Intro | Notice Nt | IsReset | Reset
            | Kamoku Int Int Mdts | KamokuMon Bool Int Mdts 
            | Check Int | Ichiran (Maybe Int) Int Int Mdts 
                                               deriving (Eq,Show)

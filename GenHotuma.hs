@@ -151,24 +151,6 @@ genWrongCons nstg i ai (hco:tlCos) =
       nchCos = map (changeEvent NoEvent) chCos''
    in hco:nchCos++[nlco]
 
-genResetNoticeCons :: Size -> [Con] -> [Con]
-genResetNoticeCons cvSz@(cW,cH) cns =
-  let mgnX = cW/3 
-      conW = cW-mgnX*2
-      fsz = 30
-      fsD = fromIntegral fsz
-      ncons = map (changeEvent NoEvent) cns 
-      lng = length cns
-      srCon = genNoticeCon cvSz (Nt lng 3 "スコアをリセットしますか？" NoEvent)
-      srCon' = srCon{txtPos=[(conW-fsD*2,fsD)],txtFsz=[fsz],txtCos=[7]}
-      nCon = genNoticeCon cvSz (Nt (lng+1) 7 "いいえ" Study)
-      nCon' = nCon{cRec=CRect (cW/20) (cH/3*2) conW (cH/4)
-                  ,txtPos=[(conW-80,40)],txtCos=[0]} 
-      yCon = genNoticeCon cvSz (Nt (lng+2) 7 "はい" ScrReset) 
-      yCon' = yCon{cRec=CRect (cW/3*2-cW/20) (cH/3*2) conW (cH/4)
-                  ,txtPos=[(conW-80,80)]}
-   in ncons++[srCon',yCon',nCon']
-
 --文字當てを始める前の確認
 genSumCons :: Size -> Int -> [Con]
 genSumCons cvSz@(cW,cH) stg =
@@ -215,16 +197,6 @@ genStartCons cvSz =
       evpr = (Study,Quest (StgLetter 0))
       bcev = Just Intro
    in genUDCons cvSz 7 bcpr tcpr txpr evpr bcev
-
-genScrResetCon :: Size -> Int -> Con
-genScrResetCon (cW,cH) i =
-  let mgnX = cW/25*22; mgnY = cH/45
-      conW = cW/12
-      fsD = 32
-      rec = CRect mgnX mgnY conW conW
-      txp = [(fsD/5,fsD/4*3)]
-      bcon = genBackCon (cW,cH) i IsReset
-   in bcon{cRec=rec,txts=["×"],txtPos=txp}
 
 genMGauges :: Size -> MType -> Int -> Int -> [Gauge]
 genMGauges (cW,cH) mtp sc tm =

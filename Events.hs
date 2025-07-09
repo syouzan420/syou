@@ -8,6 +8,7 @@ import Generate (genNoticeCon
                 ,genSaveData
                 ,genKamokuCons,genKamokuMonCons
                 ,genIchiranCons
+                ,genResetNoticeCons
                 )
 import Random (getRanList)
 import Keisan2 (siki)
@@ -122,4 +123,7 @@ evNotice cvSz nt st = st{cons=cons st++[genNoticeCon cvSz nt]}
 
 evIntro :: Size -> State -> State
 evIntro cvSz st = st{cons=genIntroCons cvSz,dcon=Nothing} 
+
+evResetNotice :: Size -> State -> State
+evResetNotice cvSz st = st{cons=genResetNoticeCons cvSz (cons st)}
 

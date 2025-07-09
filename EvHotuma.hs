@@ -55,9 +55,6 @@ evStgLt cvSz lv st = do
 evStgWd :: Size -> Int -> State -> IO State
 evStgWd cvSz lv st = undefined
 
-evResetNotice :: Size -> State -> State
-evResetNotice cvSz st = st{cons=genResetNoticeCons cvSz (cons st)}
-
 evExplain :: Size -> Int -> State -> State
 evExplain cvSz i st = st{cons=genExpCons cvSz i,dcon=Just (genDCon cvSz)}
 
