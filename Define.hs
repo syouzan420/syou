@@ -42,7 +42,7 @@ data MType = NoMission | Mi | Qu deriving (Eq,Show)
 
 data Event = NoEvent | Intro | Notice Nt
            | Kamoku Int Int Mdts | KamokuMon Bool Int Mdts 
-           | Check Int 
+           | Check Int | Ichiran (Maybe Int) Int Int Mdts 
                                               deriving (Eq,Show)
 
 data Nt = Nt Int Int String Event deriving (Eq,Show)  -- notice data

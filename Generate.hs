@@ -1,5 +1,6 @@
 module Generate(genNoticeCon,genBackCon,genIntroCons
                ,genSaveData,genKamokuCons,genKamokuMonCons
+               ,genIchiranCons
                ,changeBColor,changeFColor
                ,changeText,changeEvent
                ) where
@@ -208,17 +209,51 @@ genCheckCon cvSz@(cW,cH) i ia =
            ,txtPos=[(fsD/4,fsD)],txtFsz=[fsz],txtCos=[7]
            ,txts = ["覺へた"], typs=[Normal], clEv=ev}
 
+genIchiranCons :: Size -> Int -> [Int] -> Int -> Mdts -> [Con]
+genIchiranCons cvSz@(cW,cH) pg cls qn mdts =
+  let mgnX = cW/15; mgnY= cH/20 
+      conW = mgnX*2; conH = mgnY*9 
+      ktxListPre = drop (pg*10) (zip (map fst kanmons) [0..])
+      lngListPre = length ktxListPre
+      ktxList = take 10 ktxListPre 
+      txsInd = map (\(mon,ia)->(show (ia+1)++"\r"
+                      ++(if ia `elem` cls then " " else "✔")
+                      ++mon,ia)) ktxList
+      mgnXYs = map (\i -> (mgnX*(5-i)+conW*(4-i),mgnY)) [0..4] ++ 
+               map (\i -> (mgnX*(5-i)+conW*(4-i),mgnY+conH)) [0..4]
+      zipping = zip (zip mgnXYs txsInd) [0..9] 
+      ev = if lngListPre <= 10 then Kamoku 0 qn mdts 
+                               else Ichiran Nothing (pg+1) qn mdts
+      bev = if pg==0 then Kamoku 0 qn mdts else Ichiran Nothing (pg-1) qn mdts
+      btcon = genMiniNextCon cvSz 10 ev
+      bkcon = genBackCon cvSz 11 bev 
+      cons = map (\(((mx,my),(tx,ia)),i) 
+                -> genIchiranKCon (CRect mx my conW conH) i tx ia pg qn mdts) zipping 
+   in cons++[btcon,bkcon]
+
+genIchiranKCon :: CRect -> Int -> String -> Int -> Int -> Int -> Mdts -> Con 
+genIchiranKCon rec ind tx ia pg qn mdts =
+  let fsz = 25; fsD = fromIntegral fsz
+      ev = Ichiran (Just ia) pg qn mdts 
+   in emCon{conID=ind,cRec=rec,border=NoBord,txtPos=[(fsD*6/5,fsD)]
+           ,txtFsz=[fsz],txtCos=[1],txts=[tx],typs=[Normal],clEv=ev}
+
 genKamokuCons :: Size -> Int -> Int -> Mdts -> [Con]
 genKamokuCons cvSz lv qn mdts = 
   let bcpr = [3,9]
+      bcpr2 = bcpr++[8]
       tcpr = [7,1]
+      tcpr2 = tcpr++[2]
       txpr = ["問題","解答"]
+      txpr2 = txpr++["一覧"]
       evfn b = case mdts of
                 Mkn [] -> NoEvent
                 _ -> KamokuMon b 0 mdts
       evpr = [evfn False,evfn True]
+      evpr2 = evpr++[Ichiran Nothing 0 qn mdts]
       bcev = Just Intro 
       cns1 = case mdts of
+                Mkn _ -> genUDCons cvSz 3 bcpr2 tcpr2 True txpr2 evpr2 bcev 
                 Msn _ -> genUDCons cvSz 3 bcpr tcpr True txpr evpr bcev
                 _     -> genUDCons cvSz 5 bcpr tcpr False txpr evpr bcev
       cns2 = case mdts of
@@ -257,4 +292,9 @@ genBackCon (cW,cH) i ev =
    in emCon{conID=i,cRec=CRect mgnX mgnY conW conW,border=Circle
            ,borCol=0,filCol=7,txtPos=[(0,fsD/3*2)],txtFsz=[fsz],txtCos=[1]
            ,txts=["←"],typs=[Normal],clEv=ev}
+
+genMiniNextCon :: Size -> Int -> Event -> Con
+genMiniNextCon cvSz@(cW,cH) i ev = 
+  let conW = cW/12 
+   in (genBackCon cvSz i ev){cRec=CRect (cW-conW*3/2) (cH-conW*3/2) conW conW ,txts=["→"]}
 

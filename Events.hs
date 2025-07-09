@@ -7,6 +7,7 @@ import Generate (genNoticeCon
                 ,genBackCon,genIntroCons
                 ,genSaveData
                 ,genKamokuCons,genKamokuMonCons
+                ,genIchiranCons
                 )
 import Random (getRanList)
 import Keisan2 (siki)
@@ -30,6 +31,7 @@ execEvent cvSz cid conNum ev st = case ev of
    Notice nt -> evNotice cvSz nt st
    Check qn -> evCheck qn st
    KamokuMon isa qn mdts -> evKamokuMon cvSz isa qn mdts st 
+   Ichiran mbia pg qn mdts -> evIchiran cvSz mbia pg qn mdts st
    _ -> st
 
 evBoard :: Size -> Int -> Int -> BEvent -> State -> State
@@ -48,6 +50,14 @@ evBoard cvSz cid conNum bev st =
           then execEvent cvSz cid conNum nxev st'{board=initBoard}
           else st'{board=Board Ko bps bsc bi xev}
     _ -> st{board=nboard}
+
+evIchiran :: Size -> Maybe Int -> Int -> Int -> Mdts -> State -> State
+evIchiran cvSz mbia pg qn mdts st = 
+  let clearK = clik st 
+      newClearK = case mbia of
+        Nothing -> clearK
+        Just ia -> if ia `elem` clearK then filter (/=ia) clearK else ia:clearK
+   in st{cons=genIchiranCons cvSz pg newClearK qn mdts,clik=newClearK} 
 
 evCheck :: Int -> State -> State
 evCheck ia st = let ncon =init (cons st) in st{cons=ncon,clik=ia:clik st}
