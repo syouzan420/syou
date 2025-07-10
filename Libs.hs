@@ -52,3 +52,35 @@ selectData i rdt = do
   sdts <- selectData (i-1) dts
   return (dt:sdts)
 
+getAns :: String -> String
+getAns str =
+  let res =  concatMap (\(i,w) ->
+                   if even i then w else
+                     if '-' `elem` w then (tail . snd) (break (=='-') w) else "")
+                                                   (zip [0..] (words str)) 
+   in "<"++res++">"
+
+getMon :: String -> String
+getMon str =
+  let res = concatMap snd $ filter (\(i,_) -> odd i) (zip [0..] (words str)) 
+   in "<"++removeChr '-' res++">"
+
+removeChr :: Char -> String -> String
+removeChr _ [] = []
+removeChr ch (x:xs) = if ch==x then xs else x:removeChr ch xs 
+
+getTgt :: String -> (String,String)
+getTgt [] = ([],[])
+getTgt (x:xs)
+  | x=='>' = ([],xs)
+  | otherwise = (x:(fst (getTgt xs)),snd (getTgt xs))
+
+toMon :: String -> (String,String)
+toMon [] = ([],[])
+toMon (x:xs)
+  | x=='<' = let (tgt,xxs) = getTgt xs
+                 nxt = toMon xxs
+              in (getMon tgt++fst nxt,getAns tgt++snd nxt)
+  | otherwise = let nxt = toMon xs
+                 in (x:fst nxt,x:snd nxt) 
+

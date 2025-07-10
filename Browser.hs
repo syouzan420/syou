@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Browser (getCanvasInfo,chColors,cvRatio,setAudio,getRanNum
-                ,tcStart,tcEnd,touchIsTrue,localStore,stringToJson,setBmps) where
+               ,tcStart,tcEnd,touchIsTrue,localStore,stringToJson
+               ,setBmps,jsprompt) where
 
 import Haste(JSString)
 import Haste.Events (onEvent,preventDefault,KeyEvent(..),KeyData(..))
@@ -23,6 +24,8 @@ chColors = [RGB 200 200 180,RGB 200 255 200,RGB 255 204 153,RGB 255 153 204
            ,RGB 100 100 100,RGB 0 120 30] 
 -- 0:灰色 1:薄青 2:橙色 3:ピンク 4:空色 5:背景色(青緑) 6:黄色 7:黒 8:濃灰 9:緑 
 
+jsprompt :: String -> IO String
+jsprompt = ffi "(function (str){return (prompt(str))})"
 
 canvasW :: Canvas -> IO Double 
 canvasW = ffi "(function(cv){return cv.width})"

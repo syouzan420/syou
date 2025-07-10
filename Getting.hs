@@ -1,13 +1,13 @@
 module Getting (getExtStages,findCon,getConID,stageChars,stageCharsEx
                ,makeConsRec,makeBtmRec,makeSConRec,makeEConRec,makeSumConsRec
-               ,getBoardEv,getScore,loadState,getOstInd,getCellSize,getPlPos
-               ,makeBKos,makeBNes,getPlNDir,getNextPos,getChiriPic
+               ,getBoardEv,getScore,loadState,loadState2,getOstInd,getCellSize
+               ,getPlPos,makeBKos,makeBNes,getPlNDir,getNextPos,getChiriPic
                ,getChiriAns) where
 
 import qualified Data.Map as M
 import Data.Array ((!))
 import Libs (sepByChar)
-import Define (Pos,Size,GSize,CRect(..),Con(..),State(..)
+import Define (Pos,Size,GSize,Kmon,CRect(..),Con(..),State(..)
               ,Board(..),BMode(..),BEvent(..),BKo(..),BNe(..),MType(..)
               ,DCon(..),Obj(..),Dir(..),Role(..),PEvent(..),Ken(..)
               ,extStages,initBKoW,initBKoH,initBNeW,initBNeH,ltQuestSrc,ostIndArr
@@ -18,9 +18,24 @@ loadState "" st = st
 loadState str st =
   let dt = if head str=='\"' then tail$init str else str
       dts = sepByChar '~' dt
-      clearData = read (head dts) :: [Int]
-      hiScoreData = read (dts!!1) :: [Int] 
-   in st{hiscs=hiScoreData,cli=clearData}
+      clearKData = read (head dts) :: [Int]
+   in st{clik=clearKData}
+
+loadState2 :: String -> State -> State
+loadState2 "" st = st
+loadState2 str st =
+  let dt = if head str=='\"' then tail$init str else str
+      dts = sepByChar '~' dt
+      kanjiData = head dts
+   in st{knjs=toKmons kanjiData}
+
+toKmons :: String -> [Kmon]
+toKmons str = let dts = sepByChar ',' str in toKmons' dts
+    
+toKmons' :: [String] -> [Kmon]
+toKmons' [] = []
+toKmons' [_] = []
+toKmons' (m:k:xs) = (m,k):toKmons' xs
 
 getChiriPic :: Ken -> (Int,Pos)
 getChiriPic (Ken i n) = (i,(kenPosList!!i)!!n) 

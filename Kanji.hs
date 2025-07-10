@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Kanji where
+module Kanji(toMon) where
 
 import qualified Data.Text as T
 import File (fileRead, fileWrite)

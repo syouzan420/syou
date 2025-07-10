@@ -1,7 +1,9 @@
 module Generate(genNoticeCon,genBackCon,genIntroCons
                ,genSaveData,genKamokuCons,genKamokuMonCons
-               ,genIchiranCons,genResetNoticeCons
+               ,genIchiranCons
                ,genKGauge
+               ,genConfirmCons
+               ,genKanjiPreviewCons
                ,changeBColor,changeFColor
                ,changeText,changeEvent
                ) where
@@ -9,19 +11,19 @@ module Generate(genNoticeCon,genBackCon,genIntroCons
 import qualified Data.Map as M
 import Data.Maybe (fromMaybe)
 import Data.List (intercalate)
-import KanjiM (kanmons)
 import Libs (getIndex)
 import Getting (getExtStages,makeConsRec,makeBtmRec,makeSConRec
                ,makeEConRec,makeSumConsRec,stageChars,stageCharsEx
                ,getCellSize,getChiriPic,getChiriAns)
 import Initialize (emCon)
+import Libs (toMon)
 import Define (ltQuestSrc,clearScore,mTimeLimit,qTimeLimit,expLst
               ,defGSize,defPlGPos,chPicH
               ,Pos,Size,GPos,GSize,QSource,Kmon 
               ,State(..),Con(..),Question(..),CRect(..),Gauge(..),Board(..)
               ,Bord(..),Event(..),TxType(..),Stage(..),MType(..),BMode(..)
               ,Obj(..),Role(..),DCon(..),Dir(..),Ken(..),Kan(..),San(..)
-              ,Nt(..),Mdts(..),UpDown(..),SaveType(..))
+              ,Nt(..),Mdts(..),UpDown(..),SaveType(..),LSA(..))
 
 changeBColor :: Int -> Con -> Con
 changeBColor i co = co{borCol=i}
@@ -35,11 +37,14 @@ changeText txs co = co{txts=txs}
 changeEvent :: Event -> Con -> Con
 changeEvent ev co = co{clEv=ev}
 
+toDataKmon :: [Kmon] -> String
+toDataKmon km = intercalate "," $ concatMap (\(m,a) -> [m,a]) km
+
 genSaveData :: SaveType -> State -> String
 genSaveData sv st =
   let dts = case sv of
               ClData -> [show (clik st)]
-              KData -> [show (knjs st)]
+              KData -> [toDataKmon (knjs st)]
    in "\""++intercalate "~" dts ++"\""
 
 --テキストのみ
@@ -137,7 +142,7 @@ genMakeMCon (cW,cH) mgnY ind lv qn mdts =
       fsz = 30
       fsD = fromIntegral fsz
       stRec = CRect (mgnX+conW*4) mgnY conW conH
-      empty = case mdts of Mch _ -> Mch []; Mkn _ -> Mkn []; Msn _ -> Msn []
+      empty = case mdts of Mch _ -> Mch []; Mkn _ km -> Mkn [] km; Msn _ -> Msn []
       nt = Nt (ind+1) 4 "問題をつくるよ" (Kamoku lv qn empty)
    in emCon{conID=ind,cRec=stRec,border=Round,borCol=0
            ,filCol=2,txtPos=[(fsD/2,fsD)],txtFsz=[fsz]
@@ -145,6 +150,19 @@ genMakeMCon (cW,cH) mgnY ind lv qn mdts =
 
 genNextCon :: Size -> Int -> Event -> Con
 genNextCon cvSz idNum = genBtCon cvSz idNum 1 6 5 "つぎへ"
+
+genKanjiPreviewCons :: Size -> String -> [Con]
+genKanjiPreviewCons cvSz@(cW,_) str =
+  let rec = genKamokuMonRect cvSz
+      fsz = 30; fsD = fromIntegral fsz
+      (mon,ans) = toMon str
+      tx = "問題は\r"++mon++"\r答へは\r"++ans++"\rとなります"
+      ncon = emCon{conID=0,cRec=rec,border=NoBord
+                  ,txtPos=[(cW*2/3,fsD)],txtFsz=[fsz]
+                  ,txtCos=[7],txts=[tx],typs=[Normal],clEv=NoEvent}
+      okcon = genBtCon cvSz 1 1 6 5 "きめる" (AddKmon (mon,ans))
+      bkcon = genBackCon cvSz 2 Intro 
+   in [ncon,okcon,bkcon]
 
 genKamokuMonRect :: Size -> CRect
 genKamokuMonRect (cW,cH) =
@@ -155,10 +173,10 @@ genKamokuMonRect (cW,cH) =
 genKamokuMonCons :: Size -> Bool -> Int -> Mdts -> [Con]
 genKamokuMonCons cvSz@(cW,cH) isa qn mdts = 
   let (ia,lv,tx,fsz,pNum,mPos) = case mdts of  --ia: 全體の中でのインデックス
-        Mkn kns -> let (Kan _ (mon,ans)) = kns!!qn
-                       tx' = if isa then ans else mon 
-                       ia' = getIndex (mon,ans) kanmons
-                    in (ia',0,show (qn+1) ++ "\r\r" ++ tx',40,0,(0,0))
+        Mkn kns nKmns -> let (Kan _ (mon,ans)) = kns!!qn
+                             tx' = if isa then ans else mon 
+                             ia' = getIndex (mon,ans) nKmns 
+                          in (ia',0,show (qn+1) ++ "\r\r" ++ tx',40,0,(0,0))
         Mch kns -> let tken = kns!!qn
                        qnStr = show (qn+1)
                        (pNum',mPos') = getChiriPic tken 
@@ -183,7 +201,7 @@ genKamokuMonAllCons ia lv tx fsz pNum mPos cvSz@(cW,_) isa qn mdts =
       rec = genKamokuMonRect cvSz 
       nqn = qn+1
       (mdLen,isChi,isSan) = case mdts of
-        Mkn kns -> (length kns,False,False) 
+        Mkn kns _ -> (length kns,False,False) 
         Mch kns -> (length kns,True,False)
         Msn sns -> (length sns,False,True)
       ev = if mdLen == nqn then Kamoku lv nqn mdts else KamokuMon isa nqn mdts 
@@ -215,10 +233,10 @@ genCheckCon cvSz@(cW,cH) i ia =
            ,txts = ["覺へた"], typs=[Normal], clEv=ev}
 
 genIchiranCons :: Size -> Int -> [Int] -> Int -> Mdts -> [Con]
-genIchiranCons cvSz@(cW,cH) pg cls qn mdts =
+genIchiranCons cvSz@(cW,cH) pg cls qn mdts@(Mkn _ nKmns) =
   let mgnX = cW/15; mgnY= cH/20 
       conW = mgnX*2; conH = mgnY*9 
-      ktxListPre = drop (pg*10) (zip (map fst kanmons) [0..])
+      ktxListPre = drop (pg*10) (zip (map fst nKmns) [0..])
       lngListPre = length ktxListPre
       ktxList = take 10 ktxListPre 
       txsInd = map (\(mon,ia)->(show (ia+1)++"\r"
@@ -252,13 +270,13 @@ genKamokuCons cvSz lv qn mdts =
       txpr = ["問題","解答"]
       txpr2 = txpr++["一覧"]
       evfn b = case mdts of
-                Mkn [] -> NoEvent
+                Mkn [] _ -> NoEvent
                 _ -> KamokuMon b 0 mdts
       evpr = [evfn False,evfn True]
       evpr2 = evpr++[Ichiran Nothing 0 qn mdts]
       bcev = Just Intro 
       cns1 = case mdts of
-                Mkn _ -> genUDCons cvSz 3 bcpr2 tcpr2 True txpr2 evpr2 bcev 
+                Mkn _ _ -> genUDCons cvSz 3 bcpr2 tcpr2 True txpr2 evpr2 bcev 
                 Msn _ -> genUDCons cvSz 3 bcpr tcpr True txpr evpr bcev
                 _     -> genUDCons cvSz 5 bcpr tcpr False txpr evpr bcev
       cns2 = case mdts of
@@ -274,13 +292,14 @@ genIntroCons cvSz@(cW,cH) =
   let bcpr = [3,9,2]
       tcpr = [7,1,7]
       txpr = ["都道府県","漢字","計算"]
-      evpr = [Kamoku 0 10 (Mch []),Kamoku 0 10 (Mkn []),Kamoku 3 5 (Msn [])]
+      evpr = [Kamoku 0 10 (Mch []),Kamoku 0 10 (Mkn [] []),Kamoku 3 5 (Msn [])]
       bcev = Nothing
       rscCon = genResetCon cvSz (cW*22/25,cH/45) ClData 3 
       addCon = genAddDataCon cvSz (cW*22/25,cH*20/45) 4
       rskCon = genResetCon cvSz (cW/25,cH*20/45) KData 5 
+      cnsv = genClearSaveCon cvSz 6 
       cons = genUDCons cvSz 4 bcpr tcpr True txpr evpr bcev
-   in cons++[rscCon,addCon,rskCon]
+   in cons++[rscCon,addCon,rskCon,cnsv]
 
 genNoticeCon :: Size -> Nt -> Con
 genNoticeCon (cW,cH) (Nt i flco tx ev) = 
@@ -307,8 +326,8 @@ genMiniNextCon cvSz@(cW,cH) i ev =
   let conW = cW/12 
    in (genBackCon cvSz i ev){cRec=CRect (cW-conW*3/2) (cH-conW*3/2) conW conW ,txts=["→"]}
 
-genResetNoticeCons :: Size -> String -> SaveType -> [Con] -> [Con]
-genResetNoticeCons cvSz@(cW,cH) tx sv cns =
+genConfirmCons :: Size -> String -> LSA -> [Con] -> [Con]
+genConfirmCons cvSz@(cW,cH) tx lsaSt cns =
   let mgnX = cW/3 
       conW = cW-mgnX*2
       fsz = 30
@@ -320,7 +339,7 @@ genResetNoticeCons cvSz@(cW,cH) tx sv cns =
       nCon = genNoticeCon cvSz (Nt (lng+1) 7 "いいえ" Intro)
       nCon' = nCon{cRec=CRect (cW/20) (cH/3*2) conW (cH/4)
                   ,txtPos=[(conW-80,40)],txtCos=[0]} 
-      yCon = genNoticeCon cvSz (Nt (lng+2) 7 "はい" (Reset sv)) 
+      yCon = genNoticeCon cvSz (Nt (lng+2) 7 "はい" (Storage lsaSt)) 
       yCon' = yCon{cRec=CRect (cW/3*2-cW/20) (cH/3*2) conW (cH/4)
                   ,txtPos=[(conW-80,80)]}
    in ncons++[srCon',yCon',nCon']
@@ -343,11 +362,20 @@ genAddDataCon cvSz@(cW,_) (mgnX,mgnY) i =
       bcon = genBackCon cvSz i AddData 
    in bcon{cRec=rec,txts=["+"],txtPos=txp}
 
+genClearSaveCon :: Size -> Int -> Con
+genClearSaveCon cvSz@(cW,cH) i =
+  let conW = cW/12
+      mgnX = cW-conW*3/2; mgnY = cH-conW*3/2
+      fsD = 32
+      rec = CRect mgnX mgnY conW conW
+      txp = [(fsD/5,fsD/4*3)]
+      bcon = genBackCon cvSz i (IsSave ClData) 
+   in bcon {cRec=rec,txts=["S"],txtPos=txp}
 
-genKGauge :: Size -> Int -> Gauge
-genKGauge (cW,cH) cln =
+genKGauge :: Size -> Int -> [Kmon] -> Gauge
+genKGauge (cW,cH) cln nKmns =
   let mgnX = cW*3/8; mgnY = cH/25
       gW = cW/3; gH = 10;
-      klng = length kanmons
+      klng = length nKmns 
       par = floor (fromIntegral cln/fromIntegral klng*100)
    in Gauge "達成度" (mgnX,mgnY) (gW,gH) 100 par "100%"

@@ -17,7 +17,7 @@ import Define (nfs,wstIndex,storeName
 import Browser (chColors,localStore)
 import Initialize (testCon)
 import EAffirm (affr)
-import Getting (loadState,makeBKos,makeBNes)
+import Getting (loadState,loadState2,makeBKos,makeBNes)
 import Libs(getIndex)
 
 type Bmps = ([Bitmap],[Bitmap],[Bitmap])
@@ -45,7 +45,7 @@ startGame c ci bmps st = do
   sData <- localStore (Load ClData) 
   sData2 <- localStore (Load KData)
   let nst = if sData=="loadError" then st else loadState sData st
-  let nst2 = if sData2=="loadError" then nst else loadState sData2 nst
+  let nst2 = if sData2=="loadError" then nst else loadState2 sData2 nst
   return nst2
 
 randomMessage :: Canvas -> CInfo -> Bmps -> State -> IO ()

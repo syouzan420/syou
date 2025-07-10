@@ -20,7 +20,7 @@ data Kan = Kan Int Kmon deriving (Eq,Show) -- Kan kanjiIndex sentenceNumber
 
 data San = San Int (String,Int)  deriving (Eq,Show) -- San Level (mondai,kotahe)
 
-data Mdts = Mch [Ken] | Mkn [Kan] | Msn [San] 
+data Mdts = Mch [Ken] | Mkn [Kan] [Kmon] | Msn [San] 
                                   deriving (Eq,Show) -- Mondai Datas
 
 data UpDown = Level | QNum deriving (Eq,Show)
@@ -42,9 +42,10 @@ data MType = NoMission | Mi | Qu deriving (Eq,Show)
 
 data SaveType = ClData | KData deriving (Eq,Show) -- クリアデータ,漢字データ
 
-data Event = NoEvent | Intro | Notice Nt | IsReset SaveType | Reset SaveType
-           | Kamoku Int Int Mdts | KamokuMon Bool Int Mdts 
-           | Check Int | Ichiran (Maybe Int) Int Int Mdts | AddData
+data Event = NoEvent | Intro | Notice Nt | IsReset SaveType | Storage LSA 
+           | Kamoku Int Int Mdts | KamokuMon Bool Int Mdts  | IsSave SaveType
+           | Check Int | Ichiran (Maybe Int) Int Int Mdts 
+           | AddData | AddKmon Kmon
                                               deriving (Eq,Show)
 
 data Nt = Nt Int Int String Event deriving (Eq,Show)  -- notice data

@@ -8,12 +8,13 @@ import Generate (genNoticeCon
                 ,genSaveData
                 ,genKamokuCons,genKamokuMonCons
                 ,genIchiranCons
-                ,genResetNoticeCons
+                ,genConfirmCons
+                ,genKanjiPreviewCons
                 ,genKGauge
                 )
 import Random (getRanList)
 import Keisan2 (siki)
-import Browser (localStore)
+import Browser (localStore,jsprompt)
 import Initialize (testCon,initBoard)
 import Define (mTimeLimit,clearScore,storeName
               ,Size,Kmon
@@ -25,6 +26,7 @@ import Define (mTimeLimit,clearScore,storeName
 execEventIO :: Size -> Int -> Int -> Event -> State -> IO State
 execEventIO cvSz cid conNum ev st = case ev of   
    Kamoku lv qn mdts -> evKamoku cvSz lv qn mdts st
+   AddData -> evAddData cvSz st
    _ -> return $ execEvent cvSz cid conNum ev st
 
 execEvent :: Size -> Int -> Int -> Event -> State -> State
@@ -34,12 +36,25 @@ execEvent cvSz cid conNum ev st = case ev of
    Check qn -> evCheck qn st
    KamokuMon isa qn mdts -> evKamokuMon cvSz isa qn mdts st 
    Ichiran mbia pg qn mdts -> evIchiran cvSz mbia pg qn mdts st
-   IsReset sv -> evResetNotice cvSz sv st
-   Reset sv -> let (nclik,nknjs) = case sv of
-                                    ClData -> ([],knjs st)
-                                    KData -> (clik st,[])
-                in evIntro cvSz st{clik=nclik,knjs=nknjs,lsa=Remv sv}
+   IsReset sv -> evConfirm cvSz (Remv sv) st
+   IsSave sv -> evConfirm cvSz (Save sv (genSaveData sv st)) st 
+   AddKmon km -> evAddKmon cvSz km st
+   Storage lsaSt -> let (nclik,nknjs) = case lsaSt of
+                                          Remv ClData -> ([],knjs st)
+                                          Remv KData  -> (clik st,[])
+                                          Save _ _    -> (clik st,knjs st)
+                     in evIntro cvSz st{clik=nclik,knjs=nknjs,lsa=lsaSt}
    _ -> st
+
+evAddKmon :: Size -> Kmon -> State -> State
+evAddKmon cvSz km st = let nst = st{knjs=knjs st++[km]}
+                        in evConfirm cvSz (Save KData (genSaveData KData nst)) nst
+
+evAddData :: Size -> State -> IO State
+evAddData cvSz st = do
+ str <- jsprompt "問題を入力してね♪\n入力例: 鳥が<飛 と>ぶ\n入力例2: <楽 たの-しい>夏：なつ：休：やす：み" 
+ let ncons = genKanjiPreviewCons cvSz str
+ return st{cons=ncons}
 
 evBoard :: Size -> Int -> Int -> BEvent -> State -> State
 evBoard _ _ _ NoBEvent st = st
@@ -73,9 +88,10 @@ evKamokuMon :: Size -> Bool -> Int -> Mdts -> State -> State
 evKamokuMon cvSz isa qn mdts st = st{cons=genKamokuMonCons cvSz isa qn mdts}
 
 evKamoku :: Size -> Int -> Int -> Mdts -> State -> IO State
-evKamoku cvSz _ qn (Mkn kns) st = do 
+evKamoku cvSz _ qn (Mkn kns _) st = do 
   let clearK = clik st
-  let kanmonsC = map fst $ filter (\(_,i)-> i `notElem` clearK) (zip kanmons [0..]) 
+  let nKmns = kanmons ++ knjs st
+  let kanmonsC = map fst $ filter (\(_,i)-> i `notElem` clearK) (zip nKmns [0..]) 
   let lngMon = length kanmonsC
   let qn'
         | null kanmonsC = 0
@@ -84,8 +100,8 @@ evKamoku cvSz _ qn (Mkn kns) st = do
         | otherwise = qn
   nkns <- if null kns then getRanList lngMon qn' >>= return . map (toKan kanmonsC)
                       else return kns 
-  let ncos = genKamokuCons cvSz 0 qn' (Mkn nkns)
-  return st{cons=ncos,gaus=[genKGauge cvSz (length clearK)]}
+  let ncos = genKamokuCons cvSz 0 qn' (Mkn nkns nKmns)
+  return st{cons=ncos,gaus=[genKGauge cvSz (length clearK) nKmns]}
 evKamoku cvSz _ qn (Mch kns) st = do 
   let qn'
         | qn<1 = 1
@@ -130,10 +146,12 @@ evNotice cvSz nt st = st{cons=cons st++[genNoticeCon cvSz nt]}
 evIntro :: Size -> State -> State
 evIntro cvSz st = st{cons=genIntroCons cvSz,dcon=Nothing,gaus=[]} 
 
-evResetNotice :: Size -> SaveType -> State -> State
-evResetNotice cvSz sv st = 
-  let tx = case sv of
-              ClData ->  "進捗データをクリアしますか？"
-              KData -> "漢字データをクリアしますか？"
-   in st{cons=genResetNoticeCons cvSz tx sv (cons st)}
+evConfirm :: Size -> LSA -> State -> State
+evConfirm cvSz lsaSt st = 
+  let tx = case lsaSt of
+              Remv ClData ->  "進：しん：捗：ちょく：データをクリアする？"
+              Remv KData -> "漢字データをクリアする？"
+              Save ClData _ -> "進：しん：捗：ちょく：をセーブする？"
+              Save KData _ -> "漢字データをセーブする？"
+   in st{cons=genConfirmCons cvSz tx lsaSt (cons st)}
 
