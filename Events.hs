@@ -9,6 +9,7 @@ import Generate (genNoticeCon
                 ,genKamokuCons,genKamokuMonCons
                 ,genIchiranCons
                 ,genResetNoticeCons
+                ,genKGauge
                 )
 import Random (getRanList)
 import Keisan2 (siki)
@@ -19,7 +20,7 @@ import Define (mTimeLimit,clearScore,storeName
               ,State(..),Event(..),Stage(..),Question(..),Con(..),MType(..)
               ,CRect(..),Score(..),Switch(..),TxType(..),LSA(..),BEvent(..)
               ,Board(..),BMode(..),Sound(..),Ken(..),Kan(..),San(..)
-              ,Nt(..),Mdts(..))
+              ,Nt(..),Mdts(..),SaveType(..))
 
 execEventIO :: Size -> Int -> Int -> Event -> State -> IO State
 execEventIO cvSz cid conNum ev st = case ev of   
@@ -33,6 +34,11 @@ execEvent cvSz cid conNum ev st = case ev of
    Check qn -> evCheck qn st
    KamokuMon isa qn mdts -> evKamokuMon cvSz isa qn mdts st 
    Ichiran mbia pg qn mdts -> evIchiran cvSz mbia pg qn mdts st
+   IsReset sv -> evResetNotice cvSz sv st
+   Reset sv -> let (nclik,nknjs) = case sv of
+                                    ClData -> ([],knjs st)
+                                    KData -> (clik st,[])
+                in evIntro cvSz st{clik=nclik,knjs=nknjs,lsa=Remv sv}
    _ -> st
 
 evBoard :: Size -> Int -> Int -> BEvent -> State -> State
@@ -74,12 +80,12 @@ evKamoku cvSz _ qn (Mkn kns) st = do
   let qn'
         | null kanmonsC = 0
         | qn<1 = 1
-        | qn>(lngMon-1) = lngMon-1
+        | qn>lngMon = qn-1
         | otherwise = qn
   nkns <- if null kns then getRanList lngMon qn' >>= return . map (toKan kanmonsC)
                       else return kns 
   let ncos = genKamokuCons cvSz 0 qn' (Mkn nkns)
-  return st{cons=ncos}
+  return st{cons=ncos,gaus=[genKGauge cvSz (length clearK)]}
 evKamoku cvSz _ qn (Mch kns) st = do 
   let qn'
         | qn<1 = 1
@@ -122,8 +128,12 @@ evNotice :: Size -> Nt -> State -> State
 evNotice cvSz nt st = st{cons=cons st++[genNoticeCon cvSz nt]}
 
 evIntro :: Size -> State -> State
-evIntro cvSz st = st{cons=genIntroCons cvSz,dcon=Nothing} 
+evIntro cvSz st = st{cons=genIntroCons cvSz,dcon=Nothing,gaus=[]} 
 
-evResetNotice :: Size -> State -> State
-evResetNotice cvSz st = st{cons=genResetNoticeCons cvSz (cons st)}
+evResetNotice :: Size -> SaveType -> State -> State
+evResetNotice cvSz sv st = 
+  let tx = case sv of
+              ClData ->  "進捗データをクリアしますか？"
+              KData -> "漢字データをクリアしますか？"
+   in st{cons=genResetNoticeCons cvSz tx sv (cons st)}
 

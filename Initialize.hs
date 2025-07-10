@@ -20,6 +20,7 @@ initState = State {stage=Nothing
                   ,qsrc=ltQuestSrc
                   ,cli=[]
                   ,clik=[]
+                  ,knjs=[]
                   ,lsa=NoLSA
                   ,rgn=0
                   ,swc=initSwitch

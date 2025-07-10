@@ -11,8 +11,8 @@ import Haste.JSON(JSON,encodeJSON,decodeJSON)
 import Haste.JSString(pack,unpack)
 import Haste.LocalStorage(setItem,getItem,removeItem)
 import Haste.Audio(mkSource,newAudio,defaultAudioSettings,AudioSettings(..),Audio)
-import Define (State(swc),Switch(itc),CInfo,LSA(..)
-              ,imgfile,wstfile,chrfile,wstAuFile,seFile)
+import Define (State(swc),Switch(itc),CInfo,LSA(..),SaveType(..)
+              ,imgfile,wstfile,chrfile,wstAuFile,seFile,storeName,storeName2)
 
 getRanNum :: Int -> IO Int
 getRanNum = ffi "(function(i){return (Math.floor (Math.random() * i))})"
@@ -57,13 +57,14 @@ tcEnd st = return st{swc=(swc st){itc=False}}
 touchIsTrue :: State -> IO State
 touchIsTrue st = return st{swc=(swc st){itc=True}}
 
-localStore :: LSA -> String -> IO String 
-localStore lsa name =
+localStore :: LSA -> IO String 
+localStore lsa = do
+  let defName sv = case sv of ClData -> storeName; KData -> storeName2
   case lsa of
-    Save dt -> setItem (pack name) (stringToJson dt) >> return "saved"
-    Load -> do js <- getItem (pack name) :: IO (Either JSString JSON)
-               return (either loadError jsonToString js)
-    Remv -> removeItem (pack name) >> return "removed"
+    Save sv dt -> setItem (pack (defName sv)) (stringToJson dt) >> return "saved"
+    Load sv -> do js <- getItem (pack (defName sv)) :: IO (Either JSString JSON)
+                  return (either loadError jsonToString js)
+    Remv sv -> removeItem (pack (defName sv)) >> return "removed"
     _ -> return ""
 
 loadError :: JSString -> String

@@ -44,8 +44,8 @@ inputLoop c ci@(cvSz,_) bmps (oss,ses) cid bev pdr st = do
                 else return st'
   unless (st==nst) $ drawScreen c ci bmps nst
   case lsa nst of
-    Save dt -> void $ localStore (Save dt) storeName
-    Remv -> void $ localStore Remv storeName 
+    Save sv dt -> void $ localStore (Save sv dt)
+    Remv sv -> void $ localStore (Remv sv) 
     _ -> return ()
   mapM_ (\case
     Aoss osInd -> play (oss!!osInd)

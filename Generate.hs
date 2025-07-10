@@ -1,6 +1,7 @@
 module Generate(genNoticeCon,genBackCon,genIntroCons
                ,genSaveData,genKamokuCons,genKamokuMonCons
                ,genIchiranCons,genResetNoticeCons
+               ,genKGauge
                ,changeBColor,changeFColor
                ,changeText,changeEvent
                ) where
@@ -20,7 +21,7 @@ import Define (ltQuestSrc,clearScore,mTimeLimit,qTimeLimit,expLst
               ,State(..),Con(..),Question(..),CRect(..),Gauge(..),Board(..)
               ,Bord(..),Event(..),TxType(..),Stage(..),MType(..),BMode(..)
               ,Obj(..),Role(..),DCon(..),Dir(..),Ken(..),Kan(..),San(..)
-              ,Nt(..),Mdts(..),UpDown(..))
+              ,Nt(..),Mdts(..),UpDown(..),SaveType(..))
 
 changeBColor :: Int -> Con -> Con
 changeBColor i co = co{borCol=i}
@@ -34,10 +35,12 @@ changeText txs co = co{txts=txs}
 changeEvent :: Event -> Con -> Con
 changeEvent ev co = co{clEv=ev}
 
-genSaveData :: State -> String
-genSaveData st =
-  let clearKanjiData = clik st
-   in "\""++intercalate "~" [show clearKanjiData]++"\""
+genSaveData :: SaveType -> State -> String
+genSaveData sv st =
+  let dts = case sv of
+              ClData -> [show (clik st)]
+              KData -> [show (knjs st)]
+   in "\""++intercalate "~" dts ++"\""
 
 --テキストのみ
 genTextCon :: Int -> CRect -> Int -> Int -> String -> Con
@@ -267,13 +270,17 @@ genKamokuCons cvSz lv qn mdts =
    in cns1++cns2++[cnmk]
 
 genIntroCons :: Size -> [Con]
-genIntroCons cvSz =
+genIntroCons cvSz@(cW,cH) =
   let bcpr = [3,9,2]
       tcpr = [7,1,7]
       txpr = ["都道府県","漢字","計算"]
       evpr = [Kamoku 0 10 (Mch []),Kamoku 0 10 (Mkn []),Kamoku 3 5 (Msn [])]
       bcev = Nothing
-   in genUDCons cvSz 4 bcpr tcpr True txpr evpr bcev
+      rscCon = genResetCon cvSz (cW*22/25,cH/45) ClData 3 
+      addCon = genAddDataCon cvSz (cW*22/25,cH*20/45) 4
+      rskCon = genResetCon cvSz (cW/25,cH*20/45) KData 5 
+      cons = genUDCons cvSz 4 bcpr tcpr True txpr evpr bcev
+   in cons++[rscCon,addCon,rskCon]
 
 genNoticeCon :: Size -> Nt -> Con
 genNoticeCon (cW,cH) (Nt i flco tx ev) = 
@@ -300,31 +307,47 @@ genMiniNextCon cvSz@(cW,cH) i ev =
   let conW = cW/12 
    in (genBackCon cvSz i ev){cRec=CRect (cW-conW*3/2) (cH-conW*3/2) conW conW ,txts=["→"]}
 
-genResetNoticeCons :: Size -> [Con] -> [Con]
-genResetNoticeCons cvSz@(cW,cH) cns =
+genResetNoticeCons :: Size -> String -> SaveType -> [Con] -> [Con]
+genResetNoticeCons cvSz@(cW,cH) tx sv cns =
   let mgnX = cW/3 
       conW = cW-mgnX*2
       fsz = 30
       fsD = fromIntegral fsz
       ncons = map (changeEvent NoEvent) cns 
       lng = length cns
-      srCon = genNoticeCon cvSz (Nt lng 3 "スコアをリセットしますか？" NoEvent)
+      srCon = genNoticeCon cvSz (Nt lng 3 tx NoEvent)
       srCon' = srCon{txtPos=[(conW-fsD*2,fsD)],txtFsz=[fsz],txtCos=[7]}
       nCon = genNoticeCon cvSz (Nt (lng+1) 7 "いいえ" Intro)
       nCon' = nCon{cRec=CRect (cW/20) (cH/3*2) conW (cH/4)
                   ,txtPos=[(conW-80,40)],txtCos=[0]} 
-      yCon = genNoticeCon cvSz (Nt (lng+2) 7 "はい" Reset) 
+      yCon = genNoticeCon cvSz (Nt (lng+2) 7 "はい" (Reset sv)) 
       yCon' = yCon{cRec=CRect (cW/3*2-cW/20) (cH/3*2) conW (cH/4)
                   ,txtPos=[(conW-80,80)]}
    in ncons++[srCon',yCon',nCon']
 
-genScrResetCon :: Size -> Int -> Con
-genScrResetCon (cW,cH) i =
-  let mgnX = cW/25*22; mgnY = cH/45
-      conW = cW/12
+genResetCon :: Size -> Pos -> SaveType -> Int -> Con
+genResetCon cvSz@(cW,_) (mgnX,mgnY) sv i =
+  let conW = cW/12
       fsD = 32
       rec = CRect mgnX mgnY conW conW
       txp = [(fsD/5,fsD/4*3)]
-      bcon = genBackCon (cW,cH) i IsReset
+      bcon = genBackCon cvSz i (IsReset sv)
    in bcon{cRec=rec,txts=["×"],txtPos=txp}
 
+genAddDataCon :: Size -> Pos -> Int -> Con
+genAddDataCon cvSz@(cW,_) (mgnX,mgnY) i =
+  let conW = cW/12
+      fsD = 32
+      rec = CRect mgnX mgnY conW conW
+      txp = [(fsD/5,fsD/4*3)]
+      bcon = genBackCon cvSz i AddData 
+   in bcon{cRec=rec,txts=["+"],txtPos=txp}
+
+
+genKGauge :: Size -> Int -> Gauge
+genKGauge (cW,cH) cln =
+  let mgnX = cW*3/8; mgnY = cH/25
+      gW = cW/3; gH = 10;
+      klng = length kanmons
+      par = floor (fromIntegral cln/fromIntegral klng*100)
+   in Gauge "達成度" (mgnX,mgnY) (gW,gH) 100 par "100%"

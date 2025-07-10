@@ -13,7 +13,7 @@ import Define (nfs,wstIndex,storeName
               ,State(..),Switch(..),Con(..),CRect(..)
               ,Bord(..),TxType(..),LSA(..),Gauge(..)
               ,Board(..),BMode(..),BKo(..),BNe(..)
-              ,Obj(..),Role(..),DCon(..))
+              ,Obj(..),Role(..),DCon(..),SaveType(..))
 import Browser (chColors,localStore)
 import Initialize (testCon)
 import EAffirm (affr)
@@ -42,8 +42,11 @@ playAudio audio st = do
 startGame :: Canvas -> CInfo -> Bmps -> State -> IO State 
 startGame c ci bmps st = do
   randomMessage c ci bmps st 
-  sData <- localStore Load storeName 
-  return $ if sData=="loadError" then st else loadState sData st
+  sData <- localStore (Load ClData) 
+  sData2 <- localStore (Load KData)
+  let nst = if sData=="loadError" then st else loadState sData st
+  let nst2 = if sData2=="loadError" then nst else loadState sData2 nst
+  return nst2
 
 randomMessage :: Canvas -> CInfo -> Bmps -> State -> IO ()
 randomMessage c ci bmps st = do
@@ -108,7 +111,7 @@ drawDCon c ((_,cvH),_) bmps (Just (DCon cbs os _)) = do
   mapM_ (putObj c (cx,cy) bmps) os
 
 putGauge :: Canvas -> Gauge -> IO ()
-putGauge c (Gauge title (gx,gy) (gw,gh) mx cu) = do
+putGauge c (Gauge title (gx,gy) (gw,gh) mx cu bst) = do
   let scol = chColors!!3 -- red
       mcol = chColors!!6 -- yellow
       lcol = chColors!!4 -- cyan
@@ -122,12 +125,13 @@ putGauge c (Gauge title (gx,gy) (gw,gh) mx cu) = do
         | mdc > 3 = scol
         | mdc < 2 = lcol
         | otherwise = mcol
-      bcol = head chColors
+      bcol = chColors!!1
   putText c bcol (floor gh*2) (gx,gy) title
   unless (cu==0) $ renderOnTop c $ color fcol $ fill $ roundRect (gx,gy) (gw/mdc,gh)
   renderOnTop c $ color bcol $ lineWidth 1 $
                                        stroke $ roundRect (gx,gy) (gw,gh)
-  putText c fcol (floor gh*2) (gx+gw,gy+gh) (show (max cu 0))
+  putText c fcol (floor gh*2) (gx-gh*4,gy+gh) (show (max cu 0))
+  putText c fcol (floor gh*2) (gx+gw,gy+gh) bst 
 
 putObj :: Canvas -> Pos -> Bmps -> Obj -> IO ()
 putObj c (conx,cony) bmps (Obj ro (ox,oy) sc ai) = do 

@@ -40,9 +40,11 @@ data Stage = StgLetter Int | StgWord Int deriving (Eq,Show)
 
 data MType = NoMission | Mi | Qu deriving (Eq,Show)
 
-data Event = NoEvent | Intro | Notice Nt | IsReset | Reset
+data SaveType = ClData | KData deriving (Eq,Show) -- クリアデータ,漢字データ
+
+data Event = NoEvent | Intro | Notice Nt | IsReset SaveType | Reset SaveType
            | Kamoku Int Int Mdts | KamokuMon Bool Int Mdts 
-           | Check Int | Ichiran (Maybe Int) Int Int Mdts 
+           | Check Int | Ichiran (Maybe Int) Int Int Mdts | AddData
                                               deriving (Eq,Show)
 
 data Nt = Nt Int Int String Event deriving (Eq,Show)  -- notice data
@@ -50,9 +52,9 @@ data Nt = Nt Int Int String Event deriving (Eq,Show)  -- notice data
 data Score = Score {miss :: !Int, time :: !Int} deriving (Eq,Show,Read)
 
 data Gauge = Gauge {gti :: !String, gps :: !Pos, gsz :: !Size
-                   ,gmx :: !Int, gcu :: !Int} deriving (Eq,Show)
+                   ,gmx :: !Int, gcu :: !Int, gst :: !String} deriving (Eq,Show)
 --gti: gauge title, gps: gauge position, gsz: gauge size
---gmx: gauge max num, gcu: gauge current num
+--gmx: gauge max num, gcu: gauge current num, gst: string at the gauge's right
 
 data BMode = Ko | Ne Int | Os Int | NoB deriving (Eq,Show)
 
@@ -119,7 +121,8 @@ data Con = Con {conID :: !Int
                ,enable :: !Bool
                } deriving (Eq,Show)
 
-data LSA = Save String | Load | Remv | NoLSA deriving (Eq,Show)  -- local storage actions 
+data LSA = Save SaveType String | Load SaveType | Remv SaveType | NoLSA
+                                   deriving (Eq,Show)  -- local storage actions 
 
 data State = State {stage :: !(Maybe Stage)
                    ,mtype :: !MType -- mission type (Quest or Mission)
@@ -135,6 +138,7 @@ data State = State {stage :: !(Maybe Stage)
                    ,qsrc :: !QSource -- quest source
                    ,cli :: ![Int] -- clear indexes (learning stages)
                    ,clik :: ![Int] -- kanji clear indexes
+                   ,knjs :: ![Kmon] -- user added Kanji
                    ,rgn :: !Int -- Random Number Generator
                    ,lsa :: !LSA -- local storage actions
                    ,swc :: !Switch
@@ -212,6 +216,10 @@ seFile = "Audio/se"
 
 storeName :: String
 storeName = "syougakuSave"
+
+storeName2 :: String
+storeName2 = "kanjiSave"
+
 
 ltQuestSrc :: QSource 
 ltQuestSrc = M.fromList $ zip [0..] "あかはなまいきひにみうくふぬむえけへねめおこほのもとろそよをてれせゑつるすゆんちりしゐたらさやわ"
