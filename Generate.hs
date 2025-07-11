@@ -170,8 +170,8 @@ genKamokuMonRect (cW,cH) =
       conW = cW*9/10; conH = cH*3/4
    in CRect mgnX mgnY conW conH
 
-genKamokuMonCons :: Size -> Bool -> Int -> Mdts -> [Con]
-genKamokuMonCons cvSz@(cW,cH) isa qn mdts = 
+genKamokuMonCons :: Size -> Bool -> Int -> [Int] -> Mdts -> [Con]
+genKamokuMonCons cvSz@(cW,cH) isa qn clK mdts = 
   let (ia,lv,tx,fsz,pNum,mPos) = case mdts of  --ia: 全體の中でのインデックス
         Mkn kns nKmns -> let (Kan _ (mon,ans)) = kns!!qn
                              tx' = if isa then ans else mon 
@@ -192,11 +192,11 @@ genKamokuMonCons cvSz@(cW,cH) isa qn mdts =
                          | lv<6 = 22
                          | otherwise = 19
                     in (0,lv',tx',fsz',0,(0,0))
-   in genKamokuMonAllCons ia lv tx fsz pNum mPos cvSz isa qn mdts 
+   in genKamokuMonAllCons ia lv tx fsz pNum mPos cvSz isa qn clK mdts 
 
 genKamokuMonAllCons :: Int -> Int -> String -> Int -> Int -> Pos 
-                              -> Size -> Bool -> Int -> Mdts -> [Con]
-genKamokuMonAllCons ia lv tx fsz pNum mPos cvSz@(cW,_) isa qn mdts =
+                              -> Size -> Bool -> Int -> [Int] -> Mdts -> [Con]
+genKamokuMonAllCons ia lv tx fsz pNum mPos cvSz@(cW,_) isa qn clK mdts =
   let fsD = fromIntegral fsz
       rec = genKamokuMonRect cvSz 
       nqn = qn+1
@@ -218,7 +218,8 @@ genKamokuMonAllCons ia lv tx fsz pNum mPos cvSz@(cW,_) isa qn mdts =
          | otherwise = baseCon
       btcon = genNextCon cvSz 1 ev
       bkcon = genBackCon cvSz 2 bev 
-      chcon = [genCheckCon cvSz 3 ia | isa && not isChi && not isSan]
+      chcon = [genCheckCon cvSz 3 ia 
+                  | isa && not isChi && not isSan && ia `notElem` clK]
    in [ncon,btcon,bkcon]++chcon
 
 genCheckCon :: Size -> Int -> Int -> Con

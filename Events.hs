@@ -85,7 +85,8 @@ evCheck :: Int -> State -> State
 evCheck ia st = let ncon =init (cons st) in st{cons=ncon,clik=ia:clik st}
 
 evKamokuMon :: Size -> Bool -> Int -> Mdts -> State -> State
-evKamokuMon cvSz isa qn mdts st = st{cons=genKamokuMonCons cvSz isa qn mdts}
+evKamokuMon cvSz isa qn mdts st =
+                 st{cons=genKamokuMonCons cvSz isa qn (clik st) mdts}
 
 evKamoku :: Size -> Int -> Int -> Mdts -> State -> IO State
 evKamoku cvSz _ qn (Mkn kns _) st = do 
@@ -96,7 +97,7 @@ evKamoku cvSz _ qn (Mkn kns _) st = do
   let qn'
         | null kanmonsC = 0
         | qn<1 = 1
-        | qn>lngMon = qn-1
+        | qn>lngMon = lngMon 
         | otherwise = qn
   nkns <- if null kns then getRanList lngMon qn' >>= return . map (toKan kanmonsC)
                       else return kns 
