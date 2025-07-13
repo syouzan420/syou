@@ -240,7 +240,7 @@ putLettersV c wbmp col ie tp al fz sz@(w,h) miq cln (pd,qd) (x:xs) = do
 
 getRubiPos :: Point -> Double -> Double -> Double -> Double -> Int -> Point 
 getRubiPos (pd,qd) miq ltw lth fzD mll
-  | qd==miq = (pd+ltw+fzD*1.1,miq+(fromIntegral mll-1)*lth+fzD/3) 
+  | qd==miq = (pd+ltw+fzD*1.1,miq+fromIntegral mll*lth+fzD*2/3) 
   | otherwise = (pd+fzD*1.1,qd-lth*2+fzD/3*2)
 
 getRubi :: String -> (String,String)

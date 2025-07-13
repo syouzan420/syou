@@ -235,8 +235,8 @@ genCheckCon cvSz@(cW,cH) i ia =
 
 genIchiranCons :: Size -> Int -> [Int] -> Int -> Mdts -> [Con]
 genIchiranCons cvSz@(cW,cH) pg cls qn mdts@(Mkn _ nKmns) =
-  let mgnX = cW/15; mgnY= cH/20 
-      conW = mgnX*2; conH = mgnY*9 
+  let mgnX = cW/15; mgnY= cH/19 
+      conW = mgnX*2; conH = mgnY*8 
       ktxListPre = drop (pg*10) (zip (map fst nKmns) [0..])
       lngListPre = length ktxListPre
       ktxList = take 10 ktxListPre 
