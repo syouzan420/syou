@@ -115,7 +115,7 @@ evKamoku cvSz _ qn (Mch kns) st = do
 evKamoku cvSz lv qn (Msn sns) st = do
   let lv'
         | lv<0 = 0
-        | lv>9 = 9
+        | lv>11 = 11 
         | otherwise = lv
   let qn'
         | qn<1 = 1

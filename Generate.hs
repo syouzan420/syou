@@ -190,7 +190,7 @@ genKamokuMonCons cvSz@(cW,cH) isa qn clK mdts =
                        fsz' 
                          | lv<2 = 28
                          | lv<4 = 25
-                         | lv<6 || lv==9 = 22
+                         | lv<6 || lv==9 || lv==10 || lv==11 = 22
                          | lv==8 = 30
                          | otherwise = 19
                     in (0,lv',tx',fsz',0,(0,0))

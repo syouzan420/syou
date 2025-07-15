@@ -35,6 +35,8 @@ makeKZ 5 = KZ True 2 9
 makeKZ 6 = KZ True 1 99
 makeKZ 7 = KZ True 2 99
 makeKZ 8 = KZ False 1 29
+makeKZ 9 = KZ False 1 29
+makeKZ 10 = KZ False 100 999
 
 makeEX :: Int -> EX
 makeEX 0 = EX 0 2 99 
@@ -49,6 +51,8 @@ makeKT 3 = Sei $ makeKZ 3
 makeKT 4 = Bun (makeEX 1) (makeKZ 3)
 makeKT 5 = Bun (makeEX 1) (makeKZ 7)
 makeKT 6 = Bun (makeEX 2) (makeKZ 8)
+makeKT 7 = Bun (makeEX 2) (makeKZ 9)
+makeKT 8 = Sei $ makeKZ 10
 
 makeKo :: Int -> Ko
 makeKo 0 = KN False $ makeKT 0 -- 5, 7 
@@ -63,6 +67,8 @@ makeKo 8 = KD True (makeKT 3) $ KN True $ makeKT 3  -- -68/2
 makeKo 9 = KD True (makeKT 3) $ KP (makeKT 3) $ KN True $ makeKT 3 --98*5/2
 makeKo 10 = KN False $ makeKT 5
 makeKo 11 = KN False $ makeKT 6  
+makeKo 12 = KN True $ makeKT 7  
+makeKo 13 = KP (makeKT 4) $ KN False $ makeKT 8
 
 makeKou :: Int -> Kou
 makeKou 20 = Z (makeKo 1) (makeSiki 3)
@@ -80,6 +86,8 @@ makeSiki 6 = let k = makeKou 5; p = makeKou 9 in S k (S p (S p (K k)))
 makeSiki 7 = let k = makeKou 20; l = makeKou 9; m = makeKou 1 in S k (S l (K m))
 makeSiki 8 = let k = makeKou 10 in K k
 makeSiki 9 = let k = makeKou 11 in S k (K k)
+makeSiki 10 = let k = makeKou 12 in S k (K k)
+makeSiki 11 = let k = makeKou 13 in K k
 
 siki :: Int -> IO (String,Bunsu)
 siki i = showSiki (makeSiki i)
@@ -166,7 +174,7 @@ showKouA (KN isn ktp) = do
   neg <- getRan 2
   let isneg = isn && neg==1  -- True なら 項自體が負になる
   let kstr' = if isneg then "－"++(if rS<0 then "("++kstr++")" else kstr)
-                      else "＋"++kstr 
+                       else (if rS<0 then "" else "＋") ++ kstr 
   return (kstr',if isneg then negateB res else res)
 showKouA (KP ktp ko) = do
   (kstr,kres) <- showKT ktp
