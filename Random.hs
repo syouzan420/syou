@@ -5,7 +5,7 @@ import Browser (getRanNum)
 
 -- get random number(Int) from 0 to (i-1)
 -- input (Number,Generator) -> output (Number,Generator)
-getRandomNumIO :: (Int,Int) -> IO (Int,Int)
+getRandomNumIO :: (Int,Int) -> IO Int
 getRandomNumIO (i,g) = do
   utime <- getCurrentTime 
   let time = show (utctDayTime utime)
@@ -13,7 +13,7 @@ getRandomNumIO (i,g) = do
   let n = (read$tail$dropWhile (/='.') ntime)::Int
   let ng = (read$take 5 (show (n+g*(i+1))))::Int
   let m = mod ng i
-  return (m,ng)
+  return m
 
 getRandomNum :: (Int,Int) -> (Int,Int)
 getRandomNum (i,g) =
@@ -24,7 +24,7 @@ getRandomNum (i,g) =
 --
 getRan :: Int -> IO Int
 getRan = getRanNum 
---getRan i g = getRandomNumIO (i,g)
+--getRan i = getRandomNumIO (i,0)
 
 -- getRanList m i g , m:length of list from which, i:take i of the list
 getRanList :: Int -> Int -> IO [Int]

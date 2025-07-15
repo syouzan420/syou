@@ -16,6 +16,7 @@ import Getting (getExtStages,makeConsRec,makeBtmRec,makeSConRec
                ,makeEConRec,makeSumConsRec,stageChars,stageCharsEx
                ,getCellSize,getChiriPic,getChiriAns)
 import Initialize (emCon)
+import Bunsu (Bunsu(..))
 import Libs (toMon)
 import Define (ltQuestSrc,clearScore,mTimeLimit,qTimeLimit,expLst
               ,defGSize,defPlGPos,chPicH
@@ -182,14 +183,15 @@ genKamokuMonCons cvSz@(cW,cH) isa qn clK mdts =
                        (pNum',mPos') = getChiriPic tken 
                        ans = getChiriAns tken
                     in (0,0,if isa then qnStr++"\r\r"++ans else qnStr,40,pNum',mPos')
-        Msn sns -> let San lv' (mon,res) = sns!!qn
-                       resStr = if res<0 then "－"++tail (show res) else show res
-                       ans = mon ++ "\r\r = " ++ resStr 
+        Msn sns -> let San lv' (mon,res@(B _ rS)) = sns!!qn
+                 --      resStr = if rS<0 then "－"++tail (show res) else show res
+                       ans = mon ++ "\r\r = " ++ show res 
                        tx' = show (qn+1) ++ ".\r\r\r" ++ if isa then ans else mon 
                        fsz' 
                          | lv<2 = 28
                          | lv<4 = 25
-                         | lv<6 = 22
+                         | lv<6 || lv==9 = 22
+                         | lv==8 = 30
                          | otherwise = 19
                     in (0,lv',tx',fsz',0,(0,0))
    in genKamokuMonAllCons ia lv tx fsz pNum mPos cvSz isa qn clK mdts 

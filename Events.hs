@@ -13,7 +13,7 @@ import Generate (genNoticeCon
                 ,genKGauge
                 )
 import Random (getRanList)
-import Keisan2 (siki)
+import Keisan3 (siki)
 import Browser (localStore,jsprompt)
 import Initialize (testCon,initBoard)
 import Define (mTimeLimit,clearScore,storeName
@@ -115,7 +115,7 @@ evKamoku cvSz _ qn (Mch kns) st = do
 evKamoku cvSz lv qn (Msn sns) st = do
   let lv'
         | lv<0 = 0
-        | lv>7 = 7
+        | lv>9 = 9
         | otherwise = lv
   let qn'
         | qn<1 = 1

@@ -210,6 +210,21 @@ putLettersV c wbmp col ie tp al fz sz@(w,h) miq cln (pd,qd) (x:xs) = do
       mll = floor (h/lth) - 2 -- max letter length
   case x of 
     '\r'  -> putLettersV c wbmp col ie tp al fz sz miq 0 (pd-ltw,miq) xs
+    '|' -> do
+        let ((bunbo,bunsi),xxs) = getBun xs 
+            isNeg = head bunsi == '-' || head bunsi == '－'
+            bunsi' = if isNeg then tail bunsi else bunsi
+            lng = max (length bunbo) (length bunsi')
+            lngD = fromIntegral lng
+            exD = if isNeg then fzD*1.2 else 0
+        when isNeg $ putLet c col fz (pi/2) (pd+fzD/8,qd) '－'  
+        renderOnTop c $ color col $ lineWidth 2 $ stroke 
+                          $ line (pd+fzD/2,qd+exD) (pd+fzD/2,qd+fzD*(lngD+1)+exD)
+        mapM_ (\(i,ch)-> putLet c col fz (pi/2) (pd-fzD,qd+fzD/2+i*fzD+exD) ch)
+                                                             (zip [0..] bunbo) 
+        mapM_ (\(i,ch)-> putLet c col fz (pi/2) (pd+fzD,qd+fzD/2+i*fzD+exD) ch)
+                                                             (zip [0..] bunsi') 
+        putLettersV c wbmp col ie tp al fz sz miq cln (pd,qd+(lngD+3)*fzD+exD) xxs
     '：'  -> do
         let (rubi,xxs) = getRubi xs 
             (rpd,rqd) = getRubiPos (pd,qd) miq ltw lth fzD mll
@@ -237,6 +252,9 @@ putLettersV c wbmp col ie tp al fz sz@(w,h) miq cln (pd,qd) (x:xs) = do
              | x=='>' = False
              | otherwise = ie
         putLettersV c wbmp col nie tp al fz sz miq ncln (npd,nqd) xs
+
+getBun :: String -> ((String,String),String)
+getBun str = let (b:s:xs) = words str in ((b,s),unwords xs)
 
 getRubiPos :: Point -> Double -> Double -> Double -> Double -> Int -> Point 
 getRubiPos (pd,qd) miq ltw lth fzD mll

@@ -4,6 +4,9 @@ module Define where
 import Haste(JSString)
 import qualified Data.Map as M
 import Data.Array (Array,listArray)
+import Bunsu (Bunsu(..))
+
+--data Bunsu = B Integer Integer   deriving (Eq,Show)
 
 type Pos = (Double,Double)
 type Size = (Double,Double)
@@ -18,7 +21,7 @@ type Kmon = (String,String)
 
 data Kan = Kan Int Kmon deriving (Eq,Show) -- Kan kanjiIndex sentenceNumber
 
-data San = San Int (String,Int)  deriving (Eq,Show) -- San Level (mondai,kotahe)
+data San = San Int (String,Bunsu)  deriving (Eq,Show) -- San Level (mondai,kotahe)
 
 data Mdts = Mch [Ken] | Mkn [Kan] [Kmon] | Msn [San] 
                                   deriving (Eq,Show) -- Mondai Datas
