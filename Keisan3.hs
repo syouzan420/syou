@@ -34,14 +34,14 @@ makeKZ 4 = KZ True 1 9
 makeKZ 5 = KZ True 2 9
 makeKZ 6 = KZ True 1 99
 makeKZ 7 = KZ True 2 99
-makeKZ 8 = KZ False 1 29
-makeKZ 9 = KZ False 1 29
-makeKZ 10 = KZ False 100 999
+makeKZ 8 = KZ False 1 19
+makeKZ 9 = KZ False 1 19
+makeKZ 10 = KZ False 50 500 
 
 makeEX :: Int -> EX
 makeEX 0 = EX 0 2 99 
 makeEX 1 = EX 30 10 120
-makeEX 2 = EX 0 2 30 
+makeEX 2 = EX 0 2 20 
 
 makeKT :: Int -> KType
 makeKT 0 = Sei $ makeKZ 0
