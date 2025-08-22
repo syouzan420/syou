@@ -23,7 +23,9 @@ data Kan = Kan Int Kmon deriving (Eq,Show) -- Kan kanjiIndex sentenceNumber
 
 data San = San Int (String,Bunsu)  deriving (Eq,Show) -- San Level (mondai,kotahe)
 
-data Mdts = Mch [Ken] | Mkn [Kan] [Kmon] | Msn [San] 
+data Zuk = Zuk Int (Rat3,TPos) deriving (Eq,Show) -- Zuk level sankakuRatio 
+
+data Mdts = Mch [Ken] | Mkn [Kan] [Kmon] | Msn [San] | Mzu [Zuk] 
                                   deriving (Eq,Show) -- Mondai Datas
 
 data UpDown = Level | QNum deriving (Eq,Show)
@@ -45,7 +47,7 @@ data MType = NoMission | Mi | Qu deriving (Eq,Show)
 
 data SaveType = ClData | KData deriving (Eq,Show) -- クリアデータ,漢字データ
 
-data Event = NoEvent | Intro | Notice Nt | IsReset SaveType | Storage LSA 
+data Event = NoEvent | Intro | Intro2 | Notice Nt | IsReset SaveType | Storage LSA 
            | Kamoku Int Int Mdts | KamokuMon Bool Int Mdts  | IsSave SaveType
            | Check Int | Ichiran (Maybe Int) Int Int Mdts 
            | AddData | AddKmon Kmon
@@ -88,6 +90,15 @@ data PEvent = NoPEvent | Collide Obj deriving (Eq,Show)
 data Role = Pl Dir | Ob Int | Mz Char | It Int | Ex | En Char deriving (Eq,Show)
 -- Player, Obstacle, Mozi, Item, Exit, Enemy
 
+
+-- for Zukei
+data Rat3 = Rat3 !Int !Int !Int deriving (Eq,Show)
+
+data TPos = TPos !Pos !Pos !Pos deriving (Eq,Show)
+
+data Zu = ZSankaku Rat3 TPos | ZSankakuBun | ZN deriving (Eq,Show)
+
+
 data Obj = Obj {role :: !Role
                ,opos :: !Pos -- object position
                ,osc :: !Size -- object scale
@@ -119,6 +130,7 @@ data Con = Con {conID :: !Int
                ,typs :: ![TxType] -- text types (normal or osite)
                ,picSize :: ![Size]
                ,picNums :: ![Int] -- picture indexes
+               ,zukei :: ![Zu] -- zukei (drawings)
                ,audio :: !(Maybe Int) -- audio index when (show or pressed)
                ,clEv :: !Event -- event when clicked
                ,visible :: !Bool

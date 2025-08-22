@@ -1,4 +1,4 @@
-module Generate(genNoticeCon,genBackCon,genIntroCons
+module Generate(genNoticeCon,genBackCon,genIntroCons,genIntro2Cons
                ,genSaveData,genKamokuCons,genKamokuMonCons
                ,genIchiranCons
                ,genKGauge
@@ -23,8 +23,8 @@ import Define (ltQuestSrc,clearScore,mTimeLimit,qTimeLimit,expLst
               ,Pos,Size,GPos,GSize,QSource,Kmon 
               ,State(..),Con(..),Question(..),CRect(..),Gauge(..),Board(..)
               ,Bord(..),Event(..),TxType(..),Stage(..),MType(..),BMode(..)
-              ,Obj(..),Role(..),DCon(..),Dir(..),Ken(..),Kan(..),San(..)
-              ,Nt(..),Mdts(..),UpDown(..),SaveType(..),LSA(..))
+              ,Obj(..),Role(..),DCon(..),Dir(..),Ken(..),Kan(..),San(..),Zuk(..)
+              ,Zu(..),Nt(..),Mdts(..),UpDown(..),SaveType(..),LSA(..))
 
 changeBColor :: Int -> Con -> Con
 changeBColor i co = co{borCol=i}
@@ -143,7 +143,8 @@ genMakeMCon (cW,cH) mgnY ind lv qn mdts =
       fsz = 30
       fsD = fromIntegral fsz
       stRec = CRect (mgnX+conW*4) mgnY conW conH
-      empty = case mdts of Mch _ -> Mch []; Mkn _ km -> Mkn [] km; Msn _ -> Msn []
+      empty = case mdts of 
+          Mch _ -> Mch []; Mkn _ km -> Mkn [] km; Msn _ -> Msn []; Mzu _ -> Mzu []
       nt = Nt (ind+1) 4 "問題をつくるよ" (Kamoku lv qn empty)
    in emCon{conID=ind,cRec=stRec,border=Round,borCol=0
            ,filCol=2,txtPos=[(fsD/2,fsD)],txtFsz=[fsz]
@@ -173,16 +174,16 @@ genKamokuMonRect (cW,cH) =
 
 genKamokuMonCons :: Size -> Bool -> Int -> [Int] -> Mdts -> [Con]
 genKamokuMonCons cvSz@(cW,cH) isa qn clK mdts = 
-  let (ia,lv,tx,fsz,pNum,mPos) = case mdts of  --ia: 全體の中でのインデックス
+  let (ia,lv,tx,fsz,pNum,mPos,zu) = case mdts of  --ia: 全體の中でのインデックス
         Mkn kns nKmns -> let (Kan _ (mon,ans)) = kns!!qn
                              tx' = if isa then ans else mon 
                              ia' = getIndex (mon,ans) nKmns 
-                          in (ia',0,show (qn+1) ++ "\r\r" ++ tx',40,0,(0,0))
+                          in (ia',0,show (qn+1) ++ "\r\r" ++ tx',40,0,(0,0),ZN)
         Mch kns -> let tken = kns!!qn
                        qnStr = show (qn+1)
                        (pNum',mPos') = getChiriPic tken 
                        ans = getChiriAns tken
-                    in (0,0,if isa then qnStr++"\r\r"++ans else qnStr,40,pNum',mPos')
+                    in (0,0,if isa then qnStr++"\r\r"++ans else qnStr,40,pNum',mPos',ZN)
         Msn sns -> let San lv' (mon,res@(B _ rS)) = sns!!qn
                  --      resStr = if rS<0 then "－"++tail (show res) else show res
                        ans = mon ++ "\r\r = " ++ show res 
@@ -193,19 +194,22 @@ genKamokuMonCons cvSz@(cW,cH) isa qn clK mdts =
                          | lv<6 || lv==9 || lv==10 || lv==11 = 22
                          | lv==8 = 30
                          | otherwise = 19
-                    in (0,lv',tx',fsz',0,(0,0))
-   in genKamokuMonAllCons ia lv tx fsz pNum mPos cvSz isa qn clK mdts 
+                    in (0,lv',tx',fsz',0,(0,0),ZN)
+        Mzu zks -> let Zuk lv' (rt3,tp) = zks!!qn
+                    in (0,lv',show (qn+1),20,0,(0,0),ZSankaku rt3 tp)
+   in genKamokuMonAllCons ia lv tx fsz pNum mPos zu cvSz isa qn clK mdts 
 
-genKamokuMonAllCons :: Int -> Int -> String -> Int -> Int -> Pos 
+genKamokuMonAllCons :: Int -> Int -> String -> Int -> Int -> Pos -> Zu 
                               -> Size -> Bool -> Int -> [Int] -> Mdts -> [Con]
-genKamokuMonAllCons ia lv tx fsz pNum mPos cvSz@(cW,_) isa qn clK mdts =
+genKamokuMonAllCons ia lv tx fsz pNum mPos zu cvSz@(cW,_) isa qn clK mdts =
   let fsD = fromIntegral fsz
       rec = genKamokuMonRect cvSz 
       nqn = qn+1
-      (mdLen,isChi,isSan) = case mdts of
-        Mkn kns _ -> (length kns,False,False) 
-        Mch kns -> (length kns,True,False)
-        Msn sns -> (length sns,False,True)
+      (mdLen,isChi,isSan,isZuk) = case mdts of
+        Mkn kns _ -> (length kns,False,False,False) 
+        Mch kns -> (length kns,True,False,False)
+        Msn sns -> (length sns,False,True,False)
+        Mzu zks -> (length zks,False,False,True)
       ev = if mdLen == nqn then Kamoku lv nqn mdts else KamokuMon isa nqn mdts 
       bev = if qn==0 then Kamoku lv mdLen mdts else KamokuMon isa (qn-1) mdts 
       baseCon = emCon{conID=0,cRec=rec,border=NoBord
@@ -217,11 +221,12 @@ genKamokuMonAllCons ia lv tx fsz pNum mPos cvSz@(cW,_) isa qn clK mdts =
          | isChi = baseCon {picPos=[(0,0)],ponPos=[mPos],ponCos=[3]
                            ,picSize=[(300,300)],picNums=[pNum]}
          | isSan = baseCon {alpDir=[True],txtCos=[1]}
+         | isZuk = baseCon {zukei=[zu]}
          | otherwise = baseCon
       btcon = genNextCon cvSz 1 ev
       bkcon = genBackCon cvSz 2 bev 
       chcon = [genCheckCon cvSz 3 ia 
-                  | isa && not isChi && not isSan && ia `notElem` clK]
+                  | isa && not isChi && not isSan && not isZuk && ia `notElem` clK]
    in [ncon,btcon,bkcon]++chcon
 
 genCheckCon :: Size -> Int -> Int -> Con
@@ -281,12 +286,15 @@ genKamokuCons cvSz lv qn mdts =
       cns1 = case mdts of
                 Mkn _ _ -> genUDCons cvSz 3 bcpr2 tcpr2 True txpr2 evpr2 bcev 
                 Msn _ -> genUDCons cvSz 3 bcpr tcpr True txpr evpr bcev
+                Mzu _ -> genUDCons cvSz 3 bcpr tcpr True txpr evpr bcev
                 _     -> genUDCons cvSz 5 bcpr tcpr False txpr evpr bcev
       cns2 = case mdts of
                 Msn _ -> genQNumCons cvSz lv qn mdts ++ genLevelCons cvSz lv qn mdts  
+                Mzu _ -> genQNumCons cvSz lv qn mdts ++ genLevelCons cvSz lv qn mdts  
                 _     -> genQNumKCons cvSz lv qn mdts 
       cnmk = case mdts of
                 Msn _ -> genMakeMSCon cvSz lv qn mdts
+                Mzu _ -> genMakeMSCon cvSz lv qn mdts
                 _     -> genMakeMKCon cvSz lv qn mdts
    in cns1++cns2++[cnmk]
 
@@ -301,8 +309,24 @@ genIntroCons cvSz@(cW,cH) =
       addCon = genAddDataCon cvSz (cW*22/25,cH*20/45) 4
       rskCon = genResetCon cvSz (cW/25,cH*20/45) KData 5 
       cnsv = genClearSaveCon cvSz 6 
+      nextCon = genMiniNextCon cvSz 7 Intro2
       cons = genUDCons cvSz 4 bcpr tcpr True txpr evpr bcev
-   in cons++[rscCon,addCon,rskCon,cnsv]
+   in cons++[rscCon,addCon,rskCon,cnsv,nextCon]
+
+genIntro2Cons :: Size -> [Con]
+genIntro2Cons cvSz@(cW,cH) =
+  let bcpr = [3,9,2]
+      tcpr = [7,1,7]
+      txpr = ["河川と山","論語","図形"]
+      evpr = [Kamoku 0 10 (Mch []),Kamoku 0 10 (Mkn [] []),Kamoku 1 5 (Mzu [])]
+      bcev = Nothing
+      rscCon = genResetCon cvSz (cW*22/25,cH/45) ClData 3 
+      addCon = genAddDataCon cvSz (cW*22/25,cH*20/45) 4
+      rskCon = genResetCon cvSz (cW/25,cH*20/45) KData 5 
+      cnsv = genClearSaveCon cvSz 6 
+      backCon = genBackCon cvSz 7 Intro
+      cons = genUDCons cvSz 4 bcpr tcpr True txpr evpr bcev
+   in cons++[rscCon,addCon,rskCon,cnsv,backCon]
 
 genNoticeCon :: Size -> Nt -> Con
 genNoticeCon (cW,cH) (Nt i flco tx ev) = 
@@ -368,7 +392,8 @@ genAddDataCon cvSz@(cW,_) (mgnX,mgnY) i =
 genClearSaveCon :: Size -> Int -> Con
 genClearSaveCon cvSz@(cW,cH) i =
   let conW = cW/12
-      mgnX = cW-conW*3/2; mgnY = cH-conW*3/2
+      mgnX = conW/2; mgnY = cH-conW*3/2
+--mgnX = cW-conW*3/2; mgnY = cH-conW*3/2
       fsD = 32
       rec = CRect mgnX mgnY conW conW
       txp = [(fsD/5,fsD/4*3)]

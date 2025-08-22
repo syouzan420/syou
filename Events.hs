@@ -4,7 +4,7 @@ import Control.Monad (when,void,replicateM)
 import KanjiM (kanmons)
 import Getting (getScore,getOstInd)
 import Generate (genNoticeCon
-                ,genBackCon,genIntroCons
+                ,genBackCon,genIntroCons,genIntro2Cons
                 ,genSaveData
                 ,genKamokuCons,genKamokuMonCons
                 ,genIchiranCons
@@ -14,13 +14,14 @@ import Generate (genNoticeCon
                 )
 import Random (getRanList)
 import Keisan3 (siki)
+import Zukei (sankaku)
 import Browser (localStore,jsprompt)
 import Initialize (testCon,initBoard)
 import Define (mTimeLimit,clearScore,storeName
               ,Size,Kmon
               ,State(..),Event(..),Stage(..),Question(..),Con(..),MType(..)
               ,CRect(..),Score(..),Switch(..),TxType(..),LSA(..),BEvent(..)
-              ,Board(..),BMode(..),Sound(..),Ken(..),Kan(..),San(..)
+              ,Board(..),BMode(..),Sound(..),Ken(..),Kan(..),San(..),Zuk(..)
               ,Nt(..),Mdts(..),SaveType(..))
 
 execEventIO :: Size -> Int -> Int -> Event -> State -> IO State
@@ -32,6 +33,7 @@ execEventIO cvSz cid conNum ev st = case ev of
 execEvent :: Size -> Int -> Int -> Event -> State -> State
 execEvent cvSz cid conNum ev st = case ev of
    Intro -> evIntro cvSz st
+   Intro2 -> evIntro2 cvSz st
    Notice nt -> evNotice cvSz nt st
    Check qn -> evCheck qn st
    KamokuMon isa qn mdts -> evKamokuMon cvSz isa qn mdts st 
@@ -125,6 +127,19 @@ evKamoku cvSz lv qn (Msn sns) st = do
                       else return sns 
   let ncos = genKamokuCons cvSz lv' qn' (Msn nsns)
   return st{cons=ncos}
+evKamoku cvSz lv qn (Mzu zks) st = do
+  let lv'
+        | lv<0 = 0
+        | lv>11 = 11 
+        | otherwise = lv
+  let qn'
+        | qn<1 = 1
+        | qn>50 = 50
+        | otherwise = qn
+  nzks <- if null zks then replicateM qn sankaku >>= return . map (Zuk lv') 
+                      else return zks 
+  let ncos = genKamokuCons cvSz lv' qn' (Mzu nzks)
+  return st{cons=ncos}
 
 toKan :: [Kmon] -> Int -> Kan
 toKan kmn i = Kan 0 (kmn!!i)
@@ -146,6 +161,9 @@ evNotice cvSz nt st = st{cons=cons st++[genNoticeCon cvSz nt]}
 
 evIntro :: Size -> State -> State
 evIntro cvSz st = st{cons=genIntroCons cvSz,dcon=Nothing,gaus=[]} 
+
+evIntro2 :: Size -> State -> State
+evIntro2 cvSz st = st{cons=genIntro2Cons cvSz,dcon=Nothing,gaus=[]} 
 
 evConfirm :: Size -> LSA -> State -> State
 evConfirm cvSz lsaSt st = 

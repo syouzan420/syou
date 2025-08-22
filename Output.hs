@@ -1,8 +1,9 @@
+{-# LANGUAGE LambdaCase #-}
 module Output(clearScreen,putChara,playAudio
              ,putText,drawCons,startGame
              ,drawGauges,drawBoard,drawDCon) where
 
-import Haste.Graphics.Canvas(color,font,translate,rotate,line,arc,rect,circle
+import Haste.Graphics.Canvas(color,font,translate,rotate,line,arc,rect,circle,path
                             ,text,draw,scale,render,stroke,fill,lineWidth
                             ,renderOnTop
                             ,Canvas,Color(RGB),Bitmap,Point,Vector,Shape)
@@ -13,7 +14,7 @@ import Define (nfs,wstIndex,storeName
               ,State(..),Switch(..),Con(..),CRect(..)
               ,Bord(..),TxType(..),LSA(..),Gauge(..)
               ,Board(..),BMode(..),BKo(..),BNe(..)
-              ,Obj(..),Role(..),DCon(..),SaveType(..))
+              ,Obj(..),Role(..),DCon(..),SaveType(..),TPos(..),Zu(..))
 import Browser (chColors,localStore)
 import Initialize (testCon)
 import EAffirm (affr)
@@ -58,6 +59,12 @@ drawRoundRect :: Canvas -> CRect -> Double -> (Color,Color) -> IO ()
 drawRoundRect c (CRect x y w h) lnw (bcol,fcol) = do
   renderOnTop c $ color fcol $ fill $ roundRect (x,y) (w,h)
   renderOnTop c $ color bcol $ lineWidth lnw $ stroke $ roundRect (x,y) (w,h)
+
+drawTriangle :: Canvas -> Vector -> TPos -> (Color,Color) -> IO ()
+drawTriangle c pos (TPos x y z) (bcol,fcol) = do  
+  renderOnTop c $ translate pos $ color fcol $ fill $ triangle x y z 
+  renderOnTop c $ translate pos $ color bcol $ lineWidth 2 $ stroke
+                                             $ triangle x y z 
 
 drawCircle :: Canvas -> CRect -> Double -> (Color,Color) -> IO ()
 drawCircle c (CRect x y w h) lnw (bcol,fcol) = do
@@ -169,6 +176,7 @@ putCon c cvH bmps con = if not (visible con) then return () else do
       pocos = ponCos con
       pcos = map (chColors !!) pocos
       pnums = picNums con
+      zus = zukei con
       (_,wbmp,_) = bmps
   case border con of
     Rigid -> renderOnTop c $ color bcol $ stroke $ rect (cx,cy) (cx+cw,cy+ch)
@@ -177,6 +185,9 @@ putCon c cvH bmps con = if not (visible con) then return () else do
     _ -> return ()
   mapM_ (\(pnum,(pcx,pcy)) -> putImg c (cx,cy) (pcx,pcy) bmps pnum)
                                   $ zip pnums pcpos
+  mapM_ (\case
+            ZSankaku _ tp -> drawTriangle c (80,100) tp (chColors!!1,chColors!!3)
+            _ -> return ()) zus
   mapM_ (\(pcol,(pox,poy)) -> putPoint c (cx+pox,cy+poy) pcol)
                                   $ zip pcos popos
   mapM_ (\((tx,((td,al),tp)),((tpx,tpy),(fz,col))) ->
@@ -285,3 +296,6 @@ roundRect (x,y) (w,h) = do
   arc (x+10,y+10) 10 pi (pi*1.5)
   arc (x+w-10,y+10) 10 (pi*1.5) (pi*2)
   line (x+w,y+h-10) (x+w,y+10)
+
+triangle :: Point -> Point -> Point -> Shape ()
+triangle a b c = path [a,b,c,a] 
