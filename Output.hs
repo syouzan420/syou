@@ -63,8 +63,8 @@ drawRoundRect c (CRect x y w h) lnw (bcol,fcol) = do
 drawTriangle :: Canvas -> Vector -> TPos -> (Color,Color) -> IO ()
 drawTriangle c pos (TPos x y z) (bcol,fcol) = do  
   renderOnTop c $ translate pos $ color fcol $ fill $ triangle x y z 
-  renderOnTop c $ translate pos $ color bcol $ lineWidth 2 $ stroke
-                                             $ triangle x y z 
+  renderOnTop c $ translate pos $ color bcol 
+                                $ lineWidth 2 $ stroke $ triangle x y z 
 
 drawCircle :: Canvas -> CRect -> Double -> (Color,Color) -> IO ()
 drawCircle c (CRect x y w h) lnw (bcol,fcol) = do
@@ -155,6 +155,27 @@ putImg :: Canvas -> Pos -> Pos -> Bmps -> Int -> IO ()
 putImg c (conx,cony) (x,y) (imgs,_,_) pNum = do
   renderOnTop c $ translate (conx+x,cony+y) $ scale (1,1) $ draw (imgs!!pNum) (0,0)
 
+scaleTri :: Size -> TPos -> TPos
+scaleTri (cw,ch) (TPos (a,b) (c,d) (e,f)) =
+   let (c',d') = (c-a,d-b) 
+       (e',f') = (e-a,f-b)
+       minx = minimum [a,c',e']
+       maxx = maximum [a,c',e']
+       miny = minimum [b,d',f']
+       maxy = maximum [b,d',f']
+       cw' = cw*9/10
+       ch' = ch*4/5
+       scx = cw' / (maxx-minx)
+       scy = ch' / (maxy-miny)
+       sc = min scx scy
+    in TPos (a,b) (a+sc*c',b+sc*d') (a+sc*e',b+sc*f') 
+
+transTri :: Pos -> TPos -> Pos
+transTri (cx,cy) (TPos (a,b) (c,d) (e,f)) =
+   let minx = minimum [a,c,e]
+       miny = minimum [b,d,f]
+    in (-minx+cx,-miny+cy)
+
 putCon :: Canvas -> Double -> Bmps -> Con -> IO ()
 putCon c cvH bmps con = if not (visible con) then return () else do 
   let rec@(CRect cx cy cw ch) = cRec con
@@ -186,7 +207,10 @@ putCon c cvH bmps con = if not (visible con) then return () else do
   mapM_ (\(pnum,(pcx,pcy)) -> putImg c (cx,cy) (pcx,pcy) bmps pnum)
                                   $ zip pnums pcpos
   mapM_ (\case
-            ZSankaku _ tp -> drawTriangle c (80,100) tp (chColors!!1,chColors!!3)
+            ZSankaku _ tp -> do
+                  let ntp = scaleTri (cw,ch) tp
+                      tpos = transTri (cx,cy) ntp 
+                  drawTriangle c tpos ntp (chColors!!1,chColors!!3)
             _ -> return ()) zus
   mapM_ (\(pcol,(pox,poy)) -> putPoint c (cx+pox,cy+poy) pcol)
                                   $ zip pcos popos

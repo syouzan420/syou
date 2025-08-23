@@ -42,8 +42,20 @@ toTri sc (Rat3 a b c) = let da = fromIntegral a
                             dc = fromIntegral c
                          in Tri (sc*da) (sc*db) (sc*dc)
 
+rotate :: TPos -> Double -> TPos
+rotate (TPos ab (c,d) (e,f)) rd =
+  let c' = c*cos rd - d*sin rd
+      d' = c*sin rd + d*cos rd
+      e' = e*cos rd - f*sin rd
+      f' = e*sin rd + f*cos rd
+   in TPos ab (c',d') (e',f')
+
 sankaku :: IO (Rat3,TPos)
 sankaku = do
+  ro <- getRan 7
+  let rd = pi / fromIntegral (ro+1)
   r3@(Rat3 a b c) <- getRat3
-  let tp = toTri (250.0/fromIntegral (maximum [a,b,c])) r3
-  return (r3,toTPos tp)
+  let tp = toTPos $ toTri 50 r3
+      ntp = rotate tp rd
+  return (r3,ntp)
+
