@@ -23,7 +23,7 @@ data Kan = Kan Int Kmon deriving (Eq,Show) -- Kan kanjiIndex sentenceNumber
 
 data San = San Int (String,Bunsu)  deriving (Eq,Show) -- San Level (mondai,kotahe)
 
-data Zuk = Zuk Int (Rat3,TPos) deriving (Eq,Show) -- Zuk level sankakuRatio 
+data Zuk = Zuk Int (Rat3,TPos,[Frac]) deriving (Eq,Show) -- Zuk level sankakuRatio 
 
 data Mdts = Mch [Ken] | Mkn [Kan] [Kmon] | Msn [San] | Mzu [Zuk] 
                                   deriving (Eq,Show) -- Mondai Datas
@@ -92,11 +92,13 @@ data Role = Pl Dir | Ob Int | Mz Char | It Int | Ex | En Char deriving (Eq,Show)
 
 
 -- for Zukei
+type Frac = (Int,Int)
+
 data Rat3 = Rat3 !Int !Int !Int deriving (Eq,Show)
 
 data TPos = TPos !Pos !Pos !Pos deriving (Eq,Show)
 
-data Zu = ZSankaku Rat3 TPos | ZSankakuBun | ZN deriving (Eq,Show)
+data Zu = ZSankaku Rat3 TPos [Frac] Bool | ZSankakuBun | ZN deriving (Eq,Show)
 
 
 data Obj = Obj {role :: !Role

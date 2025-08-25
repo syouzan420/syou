@@ -9,12 +9,14 @@ import Haste.Graphics.Canvas(color,font,translate,rotate,line,arc,rect,circle,pa
                             ,Canvas,Color(RGB),Bitmap,Point,Vector,Shape)
 import Haste.Audio (play,Audio)
 import Control.Monad (when,unless)
+import Data.List (elemIndex)
+import Zukei (areaRatio)
 import Define (nfs,wstIndex,storeName
-              ,Pos,Size,Fsize,CInfo
+              ,Pos,Size,Fsize,CInfo,Frac
               ,State(..),Switch(..),Con(..),CRect(..)
               ,Bord(..),TxType(..),LSA(..),Gauge(..)
               ,Board(..),BMode(..),BKo(..),BNe(..)
-              ,Obj(..),Role(..),DCon(..),SaveType(..),TPos(..),Zu(..))
+              ,Obj(..),Role(..),DCon(..),SaveType(..),TPos(..),Rat3(..),Zu(..))
 import Browser (chColors,localStore)
 import Initialize (testCon)
 import EAffirm (affr)
@@ -64,7 +66,7 @@ drawTriangle :: Canvas -> Vector -> TPos -> (Color,Color) -> IO ()
 drawTriangle c pos (TPos x y z) (bcol,fcol) = do  
   renderOnTop c $ translate pos $ color fcol $ fill $ triangle x y z 
   renderOnTop c $ translate pos $ color bcol 
-                                $ lineWidth 2 $ stroke $ triangle x y z 
+                                $ lineWidth 1 $ stroke $ triangle x y z 
 
 drawCircle :: Canvas -> CRect -> Double -> (Color,Color) -> IO ()
 drawCircle c (CRect x y w h) lnw (bcol,fcol) = do
@@ -155,27 +157,6 @@ putImg :: Canvas -> Pos -> Pos -> Bmps -> Int -> IO ()
 putImg c (conx,cony) (x,y) (imgs,_,_) pNum = do
   renderOnTop c $ translate (conx+x,cony+y) $ scale (1,1) $ draw (imgs!!pNum) (0,0)
 
-scaleTri :: Size -> TPos -> TPos
-scaleTri (cw,ch) (TPos (a,b) (c,d) (e,f)) =
-   let (c',d') = (c-a,d-b) 
-       (e',f') = (e-a,f-b)
-       minx = minimum [a,c',e']
-       maxx = maximum [a,c',e']
-       miny = minimum [b,d',f']
-       maxy = maximum [b,d',f']
-       cw' = cw*9/10
-       ch' = ch*4/5
-       scx = cw' / (maxx-minx)
-       scy = ch' / (maxy-miny)
-       sc = min scx scy
-    in TPos (a,b) (a+sc*c',b+sc*d') (a+sc*e',b+sc*f') 
-
-transTri :: Pos -> TPos -> Pos
-transTri (cx,cy) (TPos (a,b) (c,d) (e,f)) =
-   let minx = minimum [a,c,e]
-       miny = minimum [b,d,f]
-    in (-minx+cx,-miny+cy)
-
 putCon :: Canvas -> Double -> Bmps -> Con -> IO ()
 putCon c cvH bmps con = if not (visible con) then return () else do 
   let rec@(CRect cx cy cw ch) = cRec con
@@ -207,10 +188,7 @@ putCon c cvH bmps con = if not (visible con) then return () else do
   mapM_ (\(pnum,(pcx,pcy)) -> putImg c (cx,cy) (pcx,pcy) bmps pnum)
                                   $ zip pnums pcpos
   mapM_ (\case
-            ZSankaku _ tp -> do
-                  let ntp = scaleTri (cw,ch) tp
-                      tpos = transTri (cx,cy) ntp 
-                  drawTriangle c tpos ntp (chColors!!1,chColors!!3)
+            ZSankaku r3 tp frs isa -> putSankaku c rec r3 tp frs isa
             _ -> return ()) zus
   mapM_ (\(pcol,(pox,poy)) -> putPoint c (cx+pox,cy+poy) pcol)
                                   $ zip pcos popos
@@ -220,6 +198,89 @@ putCon c cvH bmps con = if not (visible con) then return () else do
                 else
               putTextV c wbmp (chColors!!col) tp al fz (cw,ch) (tpx+cx,tpy+cy) tx)
                       $ zip (zip txs (zip (zip txdir aldir) tps)) (zip txpos (zip txfsz txcol))
+
+putSankaku :: Canvas -> CRect -> Rat3 -> TPos -> [Frac] -> Bool -> IO ()
+putSankaku c (CRect cx cy cw ch) r3 tp frs isa = do
+  let ntp = maxFrontTri $ scaleTri (cw,ch) tp
+      tpos = transTri (cx,cy) ntp 
+      tcols = map (chColors !!) (cycle [2,3,6,7])
+      areaRs = areaRatio frs
+  drawTriangle c tpos ntp (chColors!!1,chColors!!5)
+  if isa then putFracLineA c tpos ntp frs areaRs (chColors!!1)
+         else putFracLine c tpos ntp frs tcols (chColors!!1)
+
+scaleTri :: Size -> TPos -> TPos
+scaleTri (cw,ch) (TPos (a,b) (c,d) (e,f)) =
+   let (c',d') = (c-a,d-b) 
+       (e',f') = (e-a,f-b)
+       minx = minimum [a,c',e']
+       maxx = maximum [a,c',e']
+       miny = minimum [b,d',f']
+       maxy = maximum [b,d',f']
+       cw' = cw*9/10
+       ch' = ch*4/5
+       scx = cw' / (maxx-minx)
+       scy = ch' / (maxy-miny)
+       sc = min scx scy
+    in TPos (a,b) (a+sc*c',b+sc*d') (a+sc*e',b+sc*f') 
+
+maxFrontTri :: TPos -> TPos
+maxFrontTri (TPos p q r) =
+   let distList = zipWith distance [p,q,r] [q,r,p]
+       maxI = maxInd distList                   
+       (p',q',r') = case maxI of 0 -> (p,q,r); 1 -> (q,r,p); 2 -> (r,p,q)
+    in TPos p' q' r'
+
+transTri :: Pos -> TPos -> Pos
+transTri (cx,cy) (TPos (a,b) (c,d) (e,f)) =
+   let minx = minimum [a,c,e]
+       miny = minimum [b,d,f]
+    in (-minx+cx,-miny+cy)
+
+distance :: Pos -> Pos -> Double
+distance (a,b) (c,d) = sqrt $ (c-a)^2 + (d-b)^2
+
+maxInd :: [Double] -> Int
+maxInd diss = let maxDis = maximum diss
+                  (Just ind) = elemIndex maxDis diss
+               in ind
+
+divide :: Frac -> Pos -> Pos -> Pos
+divide (m,n) (x0,y0) (x1,y1) = let nd = fromIntegral n
+                                   md = fromIntegral m
+                                in ((nd*x0+md*x1)/(md+nd),(nd*y0+md*y1)/(md+nd))
+
+centerPos :: Pos -> Pos -> Pos -> Pos
+centerPos (x,y) (x0,y0) (x1,y1) = (x + (x0+x1)/2 - 10,y + (y0+y1)/2 + 10)
+
+heartPos :: Pos -> Pos -> Pos -> Pos -> Pos
+heartPos (x,y) (x0,y0) (x1,y1) (x2,y2) =
+                     (x + (x0+x1+x2)/3 - 10, y + (y0+y1+y2)/3 + 10)
+
+putFracLine :: Canvas -> Pos -> TPos -> [Frac] -> [Color] -> Color -> IO ()
+putFracLine _ _ _ [] _ _ = return ()
+putFracLine c tpos (TPos p q r) (x@(a,b):xs) (tcol:ys) col = do 
+  let  (r',p',q') = (divide x p q, q, r)  
+       pFst = centerPos tpos p r'
+       pSnd = centerPos tpos r' q
+  renderOnTop c $ translate tpos $ color col $ lineWidth 1 
+                                 $ stroke $ line r' q' 
+  putText c tcol 25 pFst (show a) 
+  putText c tcol 25 pSnd (show b) 
+  putFracLine c tpos (TPos p' q' r') xs ys col 
+
+putFracLineA :: Canvas -> Pos -> TPos -> [Frac] -> [Int] -> Color -> IO ()
+putFracLineA _ _ _ [] _ _ = return ()
+putFracLineA c tpos (TPos p q r) (x@(a,b):xs) (ar:ars) col = do 
+  let  (r',p',q') = (divide x p q, q, r)  
+       pFst = heartPos tpos p r' q'
+       pSnd = heartPos tpos r' p' q' 
+       tcol = chColors!!4
+  renderOnTop c $ translate tpos $ color col $ lineWidth 1 
+                                 $ stroke $ line r' q' 
+  putText c tcol 25 pFst (show ar) 
+  when (length ars==1) $ putText c tcol 25 pSnd (show (head ars)) 
+  putFracLineA c tpos (TPos p' q' r') xs ars col 
 
 putTextH :: Canvas -> Color -> Fsize -> Point -> String -> IO ()
 putTextH c col fz (x,y) str = do

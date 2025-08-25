@@ -1,10 +1,13 @@
 module Zukei where
 
-import Data.List (delete)
+import Control.Monad (replicateM)
+import Data.List (delete,nub,foldl')
 import Random (getRan)
 import Define (Rat3(..),TPos(..))
 
 --data Rat3 = Rat3 !Int !Int !Int deriving (Eq,Show)
+
+--data TPos = TPos !Pos !Pos !Pos deriving (Eq,Show)
 
 data Tri = Tri !Double !Double !Double deriving (Eq,Show)
 
@@ -12,7 +15,10 @@ type Pos = (Double,Double)
 
 type Scale = Double
 
---data TPos = TPos !Pos !Pos !Pos deriving (Eq,Show)
+type FracNum = Int
+
+type Frac = (Int,Int)
+
 
 toTPos :: Tri -> TPos
 toTPos (Tri a b c) = let bcos = (a^2+b^2-c^2)/(2*a)
@@ -30,6 +36,12 @@ getRat3 = do
   ci <- if length cs < 2 then return 0 else getRan (length cs - 1)
   let c = if null cs then b else cs!!ci
   return (Rat3 a b c)
+
+getFrac :: IO Frac 
+getFrac = do
+  let frList = [(a,b)| a <- [1..15], b <- [1..(a+5)], a < b, gcd a b == 1]
+  frInd <- getRan (length frList - 1)
+  return (frList!!frInd)
 
 istri :: Int -> Int -> Int -> Bool
 istri a b c = let mx = maximum [a,b,c] 
@@ -50,12 +62,46 @@ rotate (TPos ab (c,d) (e,f)) rd =
       f' = e*sin rd + f*cos rd
    in TPos ab (c',d') (e',f')
 
-sankaku :: IO (Rat3,TPos)
-sankaku = do
+areaRatio :: [Frac] -> [Int]
+areaRatio [] = []
+areaRatio xs@((x,y):_) = let frs = fracToArea (x,1) xs
+                             nfrs = map fraYaku frs
+                             bbs = nub $ map snd nfrs
+                             blcm = lcms bbs
+                             b1 = map (frTimes blcm) nfrs
+                             ar = map fst b1 
+                             gc = gcds ar
+                          in map (`div` gc) ar 
+
+fracToArea :: Frac -> [Frac] -> [Frac]
+fracToArea i [] = [fraYaku i]
+fracToArea (x,y) ((a,b):xs) = fraYaku (x*a,y*(a+b)):fracToArea (x*b,y*(a+b)) xs 
+
+fraYaku :: Frac -> Frac
+fraYaku (x,y) = let frGcd = gcd x y in (x `div` frGcd, y `div` frGcd)
+
+frTimes :: Int -> Frac -> Frac
+frTimes t (x,y) = fraYaku (t*x,y) 
+
+lcms :: Integral a => [a] -> a 
+lcms nms 
+      | null nms = 0
+      | length nms == 1 = head nms
+      | otherwise = foldl' lcm (lcm (head nms) (nms!!1)) (drop 2 nms)
+
+gcds :: Integral a => [a] -> a 
+gcds nms 
+      | null nms = 0
+      | length nms == 1 = head nms
+      | otherwise = foldl' gcd (gcd (head nms) (nms!!1)) (drop 2 nms)
+
+sankaku :: FracNum -> IO (Rat3,TPos,[Frac])
+sankaku n = do
+  frs <- replicateM n getFrac
   ro <- getRan 7
   let rd = pi / fromIntegral (ro+1)
   r3@(Rat3 a b c) <- getRat3
   let tp = toTPos $ toTri 50 r3
       ntp = rotate tp rd
-  return (r3,ntp)
+  return (r3,ntp,frs)
 

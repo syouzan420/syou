@@ -195,8 +195,8 @@ genKamokuMonCons cvSz@(cW,cH) isa qn clK mdts =
                          | lv==8 = 30
                          | otherwise = 19
                     in (0,lv',tx',fsz',0,(0,0),ZN)
-        Mzu zks -> let Zuk lv' (rt3,tp) = zks!!qn
-                    in (0,lv',show (qn+1),20,0,(0,0),ZSankaku rt3 tp)
+        Mzu zks -> let Zuk lv' (rt3,tp,frs) = zks!!qn
+                    in (0,lv',show (qn+1),20,0,(0,0),ZSankaku rt3 tp frs isa)
    in genKamokuMonAllCons ia lv tx fsz pNum mPos zu cvSz isa qn clK mdts 
 
 genKamokuMonAllCons :: Int -> Int -> String -> Int -> Int -> Pos -> Zu 
@@ -317,7 +317,7 @@ genIntro2Cons :: Size -> [Con]
 genIntro2Cons cvSz@(cW,cH) =
   let bcpr = [3,9,2]
       tcpr = [7,1,7]
-      txpr = ["河川と山","論語","図形"]
+      txpr = ["地形\n準備中","論語\n準備中","図形"]
       evpr = [Kamoku 0 10 (Mch []),Kamoku 0 10 (Mkn [] []),Kamoku 1 5 (Mzu [])]
       bcev = Nothing
       rscCon = genResetCon cvSz (cW*22/25,cH/45) ClData 3 
