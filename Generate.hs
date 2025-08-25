@@ -221,7 +221,7 @@ genKamokuMonAllCons ia lv tx fsz pNum mPos zu cvSz@(cW,_) isa qn clK mdts =
          | isChi = baseCon {picPos=[(0,0)],ponPos=[mPos],ponCos=[3]
                            ,picSize=[(300,300)],picNums=[pNum]}
          | isSan = baseCon {alpDir=[True],txtCos=[1]}
-         | isZuk = baseCon {zukei=[zu]}
+         | isZuk = baseCon {txtPos=[(cW-fsD*4,-fsD)],zukei=[zu]}
          | otherwise = baseCon
       btcon = genNextCon cvSz 1 ev
       bkcon = genBackCon cvSz 2 bev 

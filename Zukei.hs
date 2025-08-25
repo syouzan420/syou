@@ -17,6 +17,8 @@ type Scale = Double
 
 type FracNum = Int
 
+type Level = Int
+
 type Frac = (Int,Int)
 
 
@@ -37,9 +39,22 @@ getRat3 = do
   let c = if null cs then b else cs!!ci
   return (Rat3 a b c)
 
-getFrac :: IO Frac 
-getFrac = do
-  let frList = [(a,b)| a <- [1..15], b <- [1..(a+5)], a < b, gcd a b == 1]
+getFracs :: Level -> IO [Frac]
+getFracs 0 = do
+  (c,d) <- getFrac 9 
+  let frList = [(a,b)| a <- [1..30], b<- [(a+1)..(a+5)]
+                     , b `mod` (c+d)==0, gcd a b == 1]
+  frInd <- if null frList then return 0 else getRan (length frList - 1)
+  aa <- getRan 15
+  let (a',b') = if null frList then (aa+1, c+d) else frList!!frInd
+  return [(a',b'),(c,d)]
+getFracs 1 = replicateM 2 (getFrac 9)
+getFracs 2 = replicateM 2 (getFrac 15)
+getFracs _ = replicateM 2 (getFrac 20)
+
+getFrac :: Int -> IO Frac 
+getFrac maxInt = do
+  let frList = [(a,b)| a <- [1..maxInt], b <- [(a+1)..(a+5)], gcd a b == 1]
   frInd <- getRan (length frList - 1)
   return (frList!!frInd)
 
@@ -95,9 +110,10 @@ gcds nms
       | length nms == 1 = head nms
       | otherwise = foldl' gcd (gcd (head nms) (nms!!1)) (drop 2 nms)
 
-sankaku :: FracNum -> IO (Rat3,TPos,[Frac])
-sankaku n = do
-  frs <- replicateM n getFrac
+sankaku :: Level -> IO (Rat3,TPos,[Frac])
+sankaku lv = do
+  frs <- getFracs lv
+--  frs <- replicateM n getFrac
   ro <- getRan 7
   let rd = pi / fromIntegral (ro+1)
   r3@(Rat3 a b c) <- getRat3

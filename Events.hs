@@ -130,13 +130,13 @@ evKamoku cvSz lv qn (Msn sns) st = do
 evKamoku cvSz lv qn (Mzu zks) st = do
   let lv'
         | lv<0 = 0
-        | lv>11 = 11 
+        | lv>2 = 2 
         | otherwise = lv
   let qn'
         | qn<1 = 1
         | qn>50 = 50
         | otherwise = qn
-  nzks <- if null zks then replicateM qn (sankaku 2) >>= return . map (Zuk lv') 
+  nzks <- if null zks then replicateM qn (sankaku lv') >>= return . map (Zuk lv') 
                       else return zks 
   let ncos = genKamokuCons cvSz lv' qn' (Mzu nzks)
   return st{cons=ncos}

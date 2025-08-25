@@ -205,9 +205,9 @@ putSankaku c (CRect cx cy cw ch) r3 tp frs isa = do
       tpos = transTri (cx,cy) ntp 
       tcols = map (chColors !!) (cycle [2,3,6,7])
       areaRs = areaRatio frs
-  drawTriangle c tpos ntp (chColors!!1,chColors!!5)
-  if isa then putFracLineA c tpos ntp frs areaRs (chColors!!1)
-         else putFracLine c tpos ntp frs tcols (chColors!!1)
+  drawTriangle c tpos ntp (chColors!!0,chColors!!5)
+  if isa then putFracLineA c tpos ntp frs areaRs (chColors!!0)
+         else putFracLine c tpos ntp frs tcols (chColors!!0)
 
 scaleTri :: Size -> TPos -> TPos
 scaleTri (cw,ch) (TPos (a,b) (c,d) (e,f)) =
@@ -265,8 +265,8 @@ putFracLine c tpos (TPos p q r) (x@(a,b):xs) (tcol:ys) col = do
        pSnd = centerPos tpos r' q
   renderOnTop c $ translate tpos $ color col $ lineWidth 1 
                                  $ stroke $ line r' q' 
-  putText c tcol 25 pFst (show a) 
-  putText c tcol 25 pSnd (show b) 
+  putText c tcol 28 pFst (show a) 
+  putText c tcol 28 pSnd (show b) 
   putFracLine c tpos (TPos p' q' r') xs ys col 
 
 putFracLineA :: Canvas -> Pos -> TPos -> [Frac] -> [Int] -> Color -> IO ()
