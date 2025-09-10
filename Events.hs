@@ -12,7 +12,8 @@ import Generate (genNoticeCon
                 ,genKanjiPreviewCons
                 ,genKGauge
                 )
-import Random (getRanList)
+import Random (getRan,getRanList)
+import Libs (repList,getIndex)
 import Keisan3 (siki)
 import Zukei (sankaku)
 import Browser (localStore,jsprompt)
@@ -36,6 +37,7 @@ execEvent cvSz cid conNum ev st = case ev of
    Intro2 -> evIntro2 cvSz st
    Notice nt -> evNotice cvSz nt st
    Check qn -> evCheck qn st
+   Must qn -> evMust qn st
    KamokuMon isa qn mdts -> evKamokuMon cvSz isa qn mdts st 
    Ichiran mbia pg qn mdts -> evIchiran cvSz mbia pg qn mdts st
    IsReset sv -> evConfirm cvSz (Remv sv) st
@@ -78,21 +80,41 @@ evBoard cvSz cid conNum bev st =
 evIchiran :: Size -> Maybe Int -> Int -> Int -> Mdts -> State -> State
 evIchiran cvSz mbia pg qn mdts st = 
   let clearK = clik st 
+      mustK = mstk st
       newClearK = case mbia of
         Nothing -> clearK
-        Just ia -> if ia `elem` clearK then filter (/=ia) clearK else ia:clearK
-   in st{cons=genIchiranCons cvSz pg newClearK qn mdts,clik=newClearK} 
+        Just ia -> if ia `elem` clearK then filter (/=ia) clearK else
+                    if ia `elem` mustK then clearK else ia:clearK
+      newMustK = case mbia of 
+        Nothing -> mustK
+        Just ia -> if ia `elem` mustK then filter (/=ia) mustK else
+                    if ia `elem` clearK then ia:mustK else mustK
+   in st{cons=genIchiranCons cvSz pg newClearK newMustK qn mdts
+        ,clik=newClearK,mstk=newMustK} 
 
 evCheck :: Int -> State -> State
-evCheck ia st = let ncon =init (cons st) in st{cons=ncon,clik=ia:clik st}
+evCheck ia st = let ncon =init (init (cons st)) 
+                    clearK = clik st
+                    mustK = mstk st
+                    nmstk = filter (/=ia) mustK
+                    nclik = ia:clearK
+                 in st{cons=ncon,clik=nclik,mstk=nmstk}
+
+evMust :: Int -> State -> State
+evMust ia st = let mustK = mstk st
+                   nmstk = if ia `elem` mustK then filter (/=ia) mustK else ia:mustK
+                   ncon = init (init (cons st)) 
+                in st{cons=ncon,mstk=nmstk}
 
 evKamokuMon :: Size -> Bool -> Int -> Mdts -> State -> State
 evKamokuMon cvSz isa qn mdts st =
-                 st{cons=genKamokuMonCons cvSz isa qn (clik st) mdts}
+                 st{cons=genKamokuMonCons cvSz isa qn (clik st) (mstk st) mdts}
 
 evKamoku :: Size -> Int -> Int -> Mdts -> State -> IO State
 evKamoku cvSz _ qn (Mkn kns _) st = do 
   let clearK = clik st
+  let mustK = mstk st
+  let lngMst = length mustK
   let nKmns = kanmons ++ knjs st
   let kanmonsC = map fst $ filter (\(_,i)-> i `notElem` clearK) (zip nKmns [0..]) 
   let lngMon = length kanmonsC
@@ -101,7 +123,17 @@ evKamoku cvSz _ qn (Mkn kns _) st = do
         | qn<1 = 1
         | qn>lngMon = lngMon 
         | otherwise = qn
-  nkns <- if null kns then getRanList lngMon qn' >>= return . map (toKan kanmonsC)
+  nkns <- if null kns then do
+               iLst <- getRanList lngMst lngMst 
+               let mustKR = map (mustK !!) iLst  -- make random mustK
+               if qn' <= lngMst then do
+                   let mustKR' = take qn' mustKR
+                   return $ map (toKan nKmns) mustKR'
+                                else do
+                   lst <- getRanList lngMon (qn'-lngMst) 
+                   let kns0 = map (toKan nKmns) mustKR
+                       kns1 = map (toKan kanmonsC) lst
+                   return (kns0++kns1)
                       else return kns 
   let ncos = genKamokuCons cvSz 0 qn' (Mkn nkns nKmns)
   return st{cons=ncos,gaus=[genKGauge cvSz (length clearK) nKmns]}

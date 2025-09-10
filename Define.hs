@@ -49,7 +49,7 @@ data SaveType = ClData | KData deriving (Eq,Show) -- クリアデータ,漢字�
 
 data Event = NoEvent | Intro | Intro2 | Notice Nt | IsReset SaveType | Storage LSA 
            | Kamoku Int Int Mdts | KamokuMon Bool Int Mdts  | IsSave SaveType
-           | Check Int | Ichiran (Maybe Int) Int Int Mdts 
+           | Check Int | Must Int | Ichiran (Maybe Int) Int Int Mdts 
            | AddData | AddKmon Kmon
                                               deriving (Eq,Show)
 
@@ -156,6 +156,7 @@ data State = State {stage :: !(Maybe Stage)
                    ,qsrc :: !QSource -- quest source
                    ,cli :: ![Int] -- clear indexes (learning stages)
                    ,clik :: ![Int] -- kanji clear indexes
+                   ,mstk :: ![Int] -- kanji must indexes
                    ,knjs :: ![Kmon] -- user added Kanji
                    ,rgn :: !Int -- Random Number Generator
                    ,lsa :: !LSA -- local storage actions

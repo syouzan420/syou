@@ -19,7 +19,8 @@ loadState str st =
   let dt = if head str=='\"' then tail$init str else str
       dts = sepByChar '~' dt
       clearKData = read (head dts) :: [Int]
-   in st{clik=clearKData}
+      mustKData = read (last dts) :: [Int]
+   in st{clik=clearKData,mstk=mustKData}
 
 loadState2 :: String -> State -> State
 loadState2 "" st = st

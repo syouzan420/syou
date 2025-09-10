@@ -44,7 +44,7 @@ toDataKmon km = intercalate "," $ concatMap (\(m,a) -> [m,a]) km
 genSaveData :: SaveType -> State -> String
 genSaveData sv st =
   let dts = case sv of
-              ClData -> [show (clik st)]
+              ClData -> [show (clik st), show (mstk st)]
               KData -> [toDataKmon (knjs st)]
    in "\""++intercalate "~" dts ++"\""
 
@@ -172,8 +172,8 @@ genKamokuMonRect (cW,cH) =
       conW = cW*9/10; conH = cH*3/4
    in CRect mgnX mgnY conW conH
 
-genKamokuMonCons :: Size -> Bool -> Int -> [Int] -> Mdts -> [Con]
-genKamokuMonCons cvSz@(cW,cH) isa qn clK mdts = 
+genKamokuMonCons :: Size -> Bool -> Int -> [Int] -> [Int] -> Mdts -> [Con]
+genKamokuMonCons cvSz@(cW,cH) isa qn clK msK mdts = 
   let (ia,lv,tx,fsz,pNum,mPos,zu) = case mdts of  --ia: 全體の中でのインデックス
         Mkn kns nKmns -> let (Kan _ (mon,ans)) = kns!!qn
                              tx' = if isa then ans else mon 
@@ -197,11 +197,11 @@ genKamokuMonCons cvSz@(cW,cH) isa qn clK mdts =
                     in (0,lv',tx',fsz',0,(0,0),ZN)
         Mzu zks -> let Zuk lv' (rt3,tp,frs) = zks!!qn
                     in (0,lv',show (qn+1),20,0,(0,0),ZSankaku rt3 tp frs isa)
-   in genKamokuMonAllCons ia lv tx fsz pNum mPos zu cvSz isa qn clK mdts 
+   in genKamokuMonAllCons ia lv tx fsz pNum mPos zu cvSz isa qn clK msK mdts 
 
 genKamokuMonAllCons :: Int -> Int -> String -> Int -> Int -> Pos -> Zu 
-                              -> Size -> Bool -> Int -> [Int] -> Mdts -> [Con]
-genKamokuMonAllCons ia lv tx fsz pNum mPos zu cvSz@(cW,_) isa qn clK mdts =
+                           -> Size -> Bool -> Int -> [Int] -> [Int] -> Mdts -> [Con]
+genKamokuMonAllCons ia lv tx fsz pNum mPos zu cvSz@(cW,_) isa qn clK msK mdts =
   let fsD = fromIntegral fsz
       rec = genKamokuMonRect cvSz 
       nqn = qn+1
@@ -225,13 +225,16 @@ genKamokuMonAllCons ia lv tx fsz pNum mPos zu cvSz@(cW,_) isa qn clK mdts =
          | otherwise = baseCon
       btcon = genNextCon cvSz 1 ev
       bkcon = genBackCon cvSz 2 bev 
-      chcon = [genCheckCon cvSz 3 ia 
+      ims = ia `elem` msK
+      mscon = [genMustCon cvSz 3 ia ims
+                  | isa && not isChi && not isSan && not isZuk]
+      chcon = [genCheckCon cvSz 4 ia 
                   | isa && not isChi && not isSan && not isZuk && ia `notElem` clK]
-   in [ncon,btcon,bkcon]++chcon
+   in [ncon,btcon,bkcon]++mscon++chcon
 
 genCheckCon :: Size -> Int -> Int -> Con
 genCheckCon cvSz@(cW,cH) i ia =
-  let mgnX = cW/8; mgnY = cH/2
+  let mgnX = cW/8; mgnY = cH/2 - mgnX
       fsz = 25 
       fsD = fromIntegral fsz
       ev = Check ia 
@@ -240,16 +243,31 @@ genCheckCon cvSz@(cW,cH) i ia =
            ,txtPos=[(fsD/4,fsD)],txtFsz=[fsz],txtCos=[7]
            ,txts = ["覺へた"], typs=[Normal], clEv=ev}
 
-genIchiranCons :: Size -> Int -> [Int] -> Int -> Mdts -> [Con]
-genIchiranCons cvSz@(cW,cH) pg cls qn mdts@(Mkn _ nKmns) =
+genMustCon :: Size -> Int -> Int -> Bool -> Con
+genMustCon cvSz@(cW,cH) i ia ims =
+  let mgnX = cW/8; mgnY = cH/2 + mgnX*2
+      fsz = 25 
+      fsD = fromIntegral fsz
+      fc = if ims then 3 else 5
+      tc = if ims then 6 else 0
+      ev = Must ia 
+   in emCon{conID=i,cRec=CRect mgnX mgnY mgnX (mgnX*2)
+           ,border=Round, borCol = tc, filCol = fc 
+           ,txtPos=[(fsD/4,fsD)],txtFsz=[fsz],txtCos=[tc]
+           ,txts = ["苦手"], typs=[Normal], clEv=ev}
+
+genIchiranCons :: Size -> Int -> [Int] -> [Int] -> Int -> Mdts -> [Con]
+genIchiranCons cvSz@(cW,cH) pg cls mss qn mdts@(Mkn _ nKmns) =
   let mgnX = cW/15; mgnY= cH/19 
       conW = mgnX*2; conH = mgnY*8 
       ktxListPre = drop (pg*10) (zip (map fst nKmns) [0..])
       lngListPre = length ktxListPre
       ktxList = take 10 ktxListPre 
       txsInd = map (\(mon,ia)->(show (ia+1)++"\r"
-                      ++(if ia `elem` cls then " " else "✔")
+                      ++(if ia `elem` cls then " " else
+                          if ia `elem` mss then "❕" else "✔")
                       ++mon,ia)) ktxList
+
       mgnXYs = map (\i -> (mgnX*(5-i)+conW*(4-i),mgnY)) [0..4] ++ 
                map (\i -> (mgnX*(5-i)+conW*(4-i),mgnY+conH)) [0..4]
       zipping = zip (zip mgnXYs txsInd) [0..9] 
