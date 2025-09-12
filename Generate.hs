@@ -14,17 +14,17 @@ import Data.List (intercalate)
 import Libs (getIndex)
 import Getting (getExtStages,makeConsRec,makeBtmRec,makeSConRec
                ,makeEConRec,makeSumConsRec,stageChars,stageCharsEx
-               ,getCellSize,getChiriPic,getChiriAns)
+               ,getCellSize,getChiriPic,getChiriAns,getDoksyoPic,getDoksyoAns)
 import Initialize (emCon)
 import Bunsu (Bunsu(..))
 import Libs (toMon)
 import Define (ltQuestSrc,clearScore,mTimeLimit,qTimeLimit,expLst
-              ,defGSize,defPlGPos,chPicH
+              ,defGSize,defPlGPos,chPicH,doksyoNames
               ,Pos,Size,GPos,GSize,QSource,Kmon 
               ,State(..),Con(..),Question(..),CRect(..),Gauge(..),Board(..)
               ,Bord(..),Event(..),TxType(..),Stage(..),MType(..),BMode(..)
               ,Obj(..),Role(..),DCon(..),Dir(..),Ken(..),Kan(..),San(..),Zuk(..)
-              ,Zu(..),Nt(..),Mdts(..),UpDown(..),SaveType(..),LSA(..))
+              ,Dok(..),Zu(..),Nt(..),Mdts(..),UpDown(..),SaveType(..),LSA(..))
 
 changeBColor :: Int -> Con -> Con
 changeBColor i co = co{borCol=i}
@@ -100,12 +100,13 @@ genUpDownCons (cW,cH) mgnY ud ind lv qn mdts =
                ,CRect (mgnX+conW*2) mgnY conW conH
                ,CRect (mgnX+conW*3) mgnY conW conH
                ]
+      isDok = case mdts of Mdk _ -> True; _ -> False
       title
-          | ud==Level = "レベル"
+          | ud==Level = if isDok then "書籍名" else "レベル"
           | ud==QNum = "問題數"
           | otherwise = ""
       showItem
-          | ud==Level = show lv 
+          | ud==Level = if isDok then doksyoNames!!lv else show lv 
           | ud==QNum = show qn
           | otherwise = ""
       udEvents
@@ -145,6 +146,7 @@ genMakeMCon (cW,cH) mgnY ind lv qn mdts =
       stRec = CRect (mgnX+conW*4) mgnY conW conH
       empty = case mdts of 
           Mch _ -> Mch []; Mkn _ km -> Mkn [] km; Msn _ -> Msn []; Mzu _ -> Mzu []
+          Mdk _ -> Mdk []
       nt = Nt (ind+1) 4 "問題をつくるよ" (Kamoku lv qn empty)
    in emCon{conID=ind,cRec=stRec,border=Round,borCol=0
            ,filCol=2,txtPos=[(fsD/2,fsD)],txtFsz=[fsz]
@@ -197,6 +199,11 @@ genKamokuMonCons cvSz@(cW,cH) isa qn clK msK mdts =
                     in (0,lv',tx',fsz',0,(0,0),ZN)
         Mzu zks -> let Zuk lv' (rt3,tp,frs) = zks!!qn
                     in (0,lv',show (qn+1),20,0,(0,0),ZSankaku rt3 tp frs isa)
+        Mdk dks -> let Dok lv' _ = dks!!qn
+                       tdok = dks!!qn
+                       pNum' = getDoksyoPic tdok
+                       ans = getDoksyoAns tdok
+                     in (0,lv',if isa then ans else "",20,pNum',(0,0),ZN) 
    in genKamokuMonAllCons ia lv tx fsz pNum mPos zu cvSz isa qn clK msK mdts 
 
 genKamokuMonAllCons :: Int -> Int -> String -> Int -> Int -> Pos -> Zu 
@@ -205,11 +212,12 @@ genKamokuMonAllCons ia lv tx fsz pNum mPos zu cvSz@(cW,_) isa qn clK msK mdts =
   let fsD = fromIntegral fsz
       rec = genKamokuMonRect cvSz 
       nqn = qn+1
-      (mdLen,isChi,isSan,isZuk) = case mdts of
-        Mkn kns _ -> (length kns,False,False,False) 
-        Mch kns -> (length kns,True,False,False)
-        Msn sns -> (length sns,False,True,False)
-        Mzu zks -> (length zks,False,False,True)
+      (mdLen,isChi,isSan,isZuk,isDok) = case mdts of
+        Mkn kns _ -> (length kns,False,False,False,False) 
+        Mch kns -> (length kns,True,False,False,False)
+        Msn sns -> (length sns,False,True,False,False)
+        Mzu zks -> (length zks,False,False,True,False)
+        Mdk dks -> (length dks,False,False,False,True)
       ev = if mdLen == nqn then Kamoku lv nqn mdts else KamokuMon isa nqn mdts 
       bev = if qn==0 then Kamoku lv mdLen mdts else KamokuMon isa (qn-1) mdts 
       baseCon = emCon{conID=0,cRec=rec,border=NoBord
@@ -222,14 +230,17 @@ genKamokuMonAllCons ia lv tx fsz pNum mPos zu cvSz@(cW,_) isa qn clK msK mdts =
                            ,picSize=[(300,300)],picNums=[pNum]}
          | isSan = baseCon {alpDir=[True],txtCos=[1]}
          | isZuk = baseCon {txtPos=[(cW-fsD*4,-fsD)],zukei=[zu]}
+         | isDok = baseCon {txtCos=[10],picPos=[(0,-15)]
+                           ,picSize=[(300,300)],picNums=[pNum]}
          | otherwise = baseCon
-      btcon = genNextCon cvSz 1 ev
+      btcon = if isDok then genMiniNextCon cvSz 1 ev else genNextCon cvSz 1 ev
       bkcon = genBackCon cvSz 2 bev 
       ims = ia `elem` msK
       mscon = [genMustCon cvSz 3 ia ims
-                  | isa && not isChi && not isSan && not isZuk]
+                  | isa && not isChi && not isSan && not isZuk && not isDok]
       chcon = [genCheckCon cvSz 4 ia 
-                  | isa && not isChi && not isSan && not isZuk && ia `notElem` clK]
+                  | isa && not isChi && not isSan && not isZuk && not isDok 
+                                                  && ia `notElem` clK]
    in [ncon,btcon,bkcon]++mscon++chcon
 
 genCheckCon :: Size -> Int -> Int -> Con
@@ -305,14 +316,17 @@ genKamokuCons cvSz lv qn mdts =
                 Mkn _ _ -> genUDCons cvSz 3 bcpr2 tcpr2 True txpr2 evpr2 bcev 
                 Msn _ -> genUDCons cvSz 3 bcpr tcpr True txpr evpr bcev
                 Mzu _ -> genUDCons cvSz 3 bcpr tcpr True txpr evpr bcev
+                Mdk _ -> genUDCons cvSz 3 bcpr tcpr True txpr evpr bcev
                 _     -> genUDCons cvSz 5 bcpr tcpr False txpr evpr bcev
       cns2 = case mdts of
                 Msn _ -> genQNumCons cvSz lv qn mdts ++ genLevelCons cvSz lv qn mdts  
                 Mzu _ -> genQNumCons cvSz lv qn mdts ++ genLevelCons cvSz lv qn mdts  
+                Mdk _ -> genQNumCons cvSz lv qn mdts ++ genLevelCons cvSz lv qn mdts
                 _     -> genQNumKCons cvSz lv qn mdts 
       cnmk = case mdts of
                 Msn _ -> genMakeMSCon cvSz lv qn mdts
                 Mzu _ -> genMakeMSCon cvSz lv qn mdts
+                Mdk _ -> genMakeMSCon cvSz lv qn mdts 
                 _     -> genMakeMKCon cvSz lv qn mdts
    in cns1++cns2++[cnmk]
 
@@ -320,7 +334,7 @@ genIntroCons :: Size -> [Con]
 genIntroCons cvSz@(cW,cH) =
   let bcpr = [3,9,2]
       tcpr = [7,1,7]
-      txpr = ["都道府県","漢字","計算"]
+      txpr = ["都道府縣","漢字","計算"]
       evpr = [Kamoku 0 10 (Mch []),Kamoku 0 10 (Mkn [] []),Kamoku 3 5 (Msn [])]
       bcev = Nothing
       rscCon = genResetCon cvSz (cW*22/25,cH/45) ClData 3 
@@ -335,16 +349,16 @@ genIntro2Cons :: Size -> [Con]
 genIntro2Cons cvSz@(cW,cH) =
   let bcpr = [3,9,2]
       tcpr = [7,1,7]
-      txpr = ["地形\n準備中","論語\n準備中","図形"]
-      evpr = [Kamoku 0 10 (Mch []),Kamoku 0 10 (Mkn [] []),Kamoku 1 5 (Mzu [])]
+      txpr = ["地形\n準備中","讀書","圖形"]
+      evpr = [Kamoku 0 10 (Mch []),Kamoku 0 1 (Mdk []),Kamoku 1 5 (Mzu [])]
       bcev = Nothing
       rscCon = genResetCon cvSz (cW*22/25,cH/45) ClData 3 
-      addCon = genAddDataCon cvSz (cW*22/25,cH*20/45) 4
-      rskCon = genResetCon cvSz (cW/25,cH*20/45) KData 5 
+--      addCon = genAddDataCon cvSz (cW*22/25,cH*20/45) 4
+--      rskCon = genResetCon cvSz (cW/25,cH*20/45) KData 5 
       cnsv = genClearSaveCon cvSz 6 
       backCon = genBackCon cvSz 7 Intro
       cons = genUDCons cvSz 4 bcpr tcpr True txpr evpr bcev
-   in cons++[rscCon,addCon,rskCon,cnsv,backCon]
+   in cons++[rscCon,cnsv,backCon]
 
 genNoticeCon :: Size -> Nt -> Con
 genNoticeCon (cW,cH) (Nt i flco tx ev) = 

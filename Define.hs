@@ -25,7 +25,9 @@ data San = San Int (String,Bunsu)  deriving (Eq,Show) -- San Level (mondai,kotah
 
 data Zuk = Zuk Int (Rat3,TPos,[Frac]) deriving (Eq,Show) -- Zuk level sankakuRatio 
 
-data Mdts = Mch [Ken] | Mkn [Kan] [Kmon] | Msn [San] | Mzu [Zuk] 
+data Dok = Dok Int Int deriving (Eq,Show) -- Mak TextNumber ImageNumber(0-5) 
+
+data Mdts = Mch [Ken] | Mkn [Kan] [Kmon] | Msn [San] | Mzu [Zuk] | Mdk [Dok]
                                   deriving (Eq,Show) -- Mondai Datas
 
 data UpDown = Level | QNum deriving (Eq,Show)
@@ -291,3 +293,15 @@ kenchoList =
  ,["福岡市","佐賀市","長崎市","大分市","熊本市","宮崎市","鹿児島市","那覇市"]
  ]
 
+doksyoNames :: [String]
+doksyoNames = ["枕草子"]
+
+doksyoList :: [[String]]
+doksyoList = 
+  [["春はあけぼの やうやうしろくなりゆく山きはすこしあかりて むらさきたちたる雲のほそ\rくたなひきたる"
+  ,"夏はよる 月のころはさら\rなり やみもなを ほたるとひちかひたる 雨なとのふるさへおかし"
+  ,"秋はゆふくれ 夕日はな\rやかにさして 山きはいとちかくなりたるに\rからすのねとこへゆくとて 三つ四つふたつ\rなと とひゆくさへあはれなり"
+  ,"まひてかり\rなとのつらねたるか いとちいさくみゆる いと\rおかし 日入りはてて 風のをとむしのねなといとあはれなり"
+  ,"冬は 雪のふりたるはいふへき\rにもあらす 霜なとのいとしろく 又さらてもいとさむき 火なといそきおこして すみも\rてわたるもいとつきつきし"
+  ,"よるになりて\rぬるく ゆるひもてゆけは すひつ 火おけのひも しろきはいかちになりぬるはわろし"
+  ]]

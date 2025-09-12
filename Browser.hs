@@ -21,8 +21,8 @@ getRanNum = ffi "(function(i){return (Math.floor (Math.random() * i))})"
 chColors :: [Color]
 chColors = [RGB 200 200 180,RGB 200 255 200,RGB 255 204 153,RGB 255 153 204
            ,RGB 153 255 255,RGB 0 128 128,RGB 255 255 100,RGB 0 0 0
-           ,RGB 100 100 100,RGB 0 120 30] 
--- 0:灰色 1:薄青 2:橙色 3:ピンク 4:空色 5:背景色(青緑) 6:黄色 7:黒 8:濃灰 9:緑 
+           ,RGB 100 100 100,RGB 0 120 30,RGB 255 255 255] 
+-- 0:灰色 1:薄青 2:橙色 3:ピンク 4:空色 5:背景色(青緑) 6:黄色 7:黒 8:濃灰 9:緑 10:白 
 
 jsprompt :: String -> IO String
 jsprompt = ffi "(function (str){return (prompt(str))})"
@@ -85,7 +85,7 @@ loadImgs i str = loadImgs (i-1) str ++ [loadBitmap (pack (str ++ show i ++".png"
 
 setBmps :: IO ([Bitmap],[Bitmap],[Bitmap])
 setBmps = do
-  imgs <- sequence (loadImgs 7 imgfile)
+  imgs <- sequence (loadImgs 13 imgfile)
 --  wsts <- sequence (loadImgs 126 wstfile)
 --  chrs <- sequence (loadImgs 7 chrfile)
   return (imgs,[],[])

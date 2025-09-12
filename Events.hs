@@ -18,12 +18,12 @@ import Keisan3 (siki)
 import Zukei (sankaku)
 import Browser (localStore,jsprompt)
 import Initialize (testCon,initBoard)
-import Define (mTimeLimit,clearScore,storeName
+import Define (mTimeLimit,clearScore,storeName,doksyoList
               ,Size,Kmon
               ,State(..),Event(..),Stage(..),Question(..),Con(..),MType(..)
               ,CRect(..),Score(..),Switch(..),TxType(..),LSA(..),BEvent(..)
               ,Board(..),BMode(..),Sound(..),Ken(..),Kan(..),San(..),Zuk(..)
-              ,Nt(..),Mdts(..),SaveType(..))
+              ,Nt(..),Mdts(..),SaveType(..),Dok(..))
 
 execEventIO :: Size -> Int -> Int -> Event -> State -> IO State
 execEventIO cvSz cid conNum ev st = case ev of   
@@ -111,7 +111,7 @@ evKamokuMon cvSz isa qn mdts st =
                  st{cons=genKamokuMonCons cvSz isa qn (clik st) (mstk st) mdts}
 
 evKamoku :: Size -> Int -> Int -> Mdts -> State -> IO State
-evKamoku cvSz _ qn (Mkn kns _) st = do 
+evKamoku cvSz _ qn (Mkn kns _) st = do                  -- Kanji 
   let clearK = clik st
   let mustK = mstk st
   let lngMst = length mustK
@@ -137,7 +137,7 @@ evKamoku cvSz _ qn (Mkn kns _) st = do
                       else return kns 
   let ncos = genKamokuCons cvSz 0 qn' (Mkn nkns nKmns)
   return st{cons=ncos,gaus=[genKGauge cvSz (length clearK) nKmns]}
-evKamoku cvSz _ qn (Mch kns) st = do 
+evKamoku cvSz _ qn (Mch kns) st = do                    -- Chiri 
   let qn'
         | qn<1 = 1
         | qn>46 = 46
@@ -146,7 +146,7 @@ evKamoku cvSz _ qn (Mch kns) st = do
                       else return kns 
   let ncos = genKamokuCons cvSz 0 qn' (Mch nkns)
   return st{cons=ncos}
-evKamoku cvSz lv qn (Msn sns) st = do
+evKamoku cvSz lv qn (Msn sns) st = do                   -- Keisan
   let lv'
         | lv<0 = 0
         | lv>11 = 11 
@@ -159,7 +159,7 @@ evKamoku cvSz lv qn (Msn sns) st = do
                       else return sns 
   let ncos = genKamokuCons cvSz lv' qn' (Msn nsns)
   return st{cons=ncos}
-evKamoku cvSz lv qn (Mzu zks) st = do
+evKamoku cvSz lv qn (Mzu zks) st = do                   -- Zukei
   let lv'
         | lv<0 = 0
         | lv>2 = 2 
@@ -171,6 +171,19 @@ evKamoku cvSz lv qn (Mzu zks) st = do
   nzks <- if null zks then replicateM qn (sankaku lv') >>= return . map (Zuk lv') 
                       else return zks 
   let ncos = genKamokuCons cvSz lv' qn' (Mzu nzks)
+  return st{cons=ncos}
+evKamoku cvSz lv qn (Mdk dks) st = do
+  let lv' 
+        | lv<0 = 0
+        | lv>0 = 0
+        | otherwise = lv
+  let lng = length $ doksyoList!!lv'
+  let qn'
+        | qn<1 = 1
+        | qn>lng = lng 
+        | otherwise = qn
+  let ndks = if null dks then map (Dok lv') [0..(qn'-1)] else dks 
+  let ncos = genKamokuCons cvSz lv' qn' (Mdk ndks)
   return st{cons=ncos}
 
 toKan :: [Kmon] -> Int -> Kan

@@ -2,16 +2,16 @@ module Getting (getExtStages,findCon,getConID,stageChars,stageCharsEx
                ,makeConsRec,makeBtmRec,makeSConRec,makeEConRec,makeSumConsRec
                ,getBoardEv,getScore,loadState,loadState2,getOstInd,getCellSize
                ,getPlPos,makeBKos,makeBNes,getPlNDir,getNextPos,getChiriPic
-               ,getChiriAns) where
+               ,getChiriAns,getDoksyoPic,getDoksyoAns) where
 
 import qualified Data.Map as M
 import Data.Array ((!))
 import Libs (sepByChar)
 import Define (Pos,Size,GSize,Kmon,CRect(..),Con(..),State(..)
               ,Board(..),BMode(..),BEvent(..),BKo(..),BNe(..),MType(..)
-              ,DCon(..),Obj(..),Dir(..),Role(..),PEvent(..),Ken(..)
+              ,DCon(..),Obj(..),Dir(..),Role(..),PEvent(..),Ken(..),Dok(..)
               ,extStages,initBKoW,initBKoH,initBNeW,initBNeH,ltQuestSrc,ostIndArr
-              ,kenPosList,kenList,kenchoList)
+              ,kenPosList,kenList,kenchoList,doksyoList)
 
 loadState :: String -> State -> State
 loadState "" st = st
@@ -45,6 +45,14 @@ getChiriAns :: Ken -> String
 getChiriAns (Ken i n) = let ken = (kenList!!i)!!n 
                             kencho = (kenchoList!!i)!!n
                          in ken++"\r"++kencho
+
+getDoksyoPic :: Dok -> Int
+getDoksyoPic (Dok n i) 
+    | n==0 = i+8
+    | otherwise = 8
+
+getDoksyoAns :: Dok -> String
+getDoksyoAns (Dok n i) = (doksyoList!!n)!!i
 
 getScore :: MType -> Int -> Int -> Int
 getScore Mi lv ms = lv-ms*2
