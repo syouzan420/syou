@@ -175,7 +175,7 @@ evKamoku cvSz lv qn (Mzu zks) st = do                   -- Zukei
 evKamoku cvSz lv qn (Mdk dks) st = do
   let lv' 
         | lv<0 = 0
-        | lv>0 = 0
+        | lv>1 = 1
         | otherwise = lv
   let lng = length $ doksyoList!!lv'
   let qn'

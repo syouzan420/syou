@@ -49,6 +49,7 @@ getChiriAns (Ken i n) = let ken = (kenList!!i)!!n
 getDoksyoPic :: Dok -> Int
 getDoksyoPic (Dok n i) 
     | n==0 = i+8
+    | n==1 = i+14
     | otherwise = 8
 
 getDoksyoAns :: Dok -> String

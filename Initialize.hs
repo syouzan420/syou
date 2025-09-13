@@ -70,6 +70,7 @@ emCon = Con {conID = 0
             ,typs = []
             ,picSize = []
             ,picNums = []
+            ,picOps = []
             ,zukei = []
             ,audio = Nothing
             ,clEv = NoEvent

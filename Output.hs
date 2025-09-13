@@ -4,7 +4,7 @@ module Output(clearScreen,putChara,playAudio
              ,drawGauges,drawBoard,drawDCon) where
 
 import Haste.Graphics.Canvas(color,font,translate,rotate,line,arc,rect,circle,path
-                            ,text,draw,scale,render,stroke,fill,lineWidth
+                            ,text,draw,scale,render,stroke,fill,lineWidth,opacity
                             ,renderOnTop
                             ,Canvas,Color(RGB),Bitmap,Point,Vector,Shape)
 import Haste.Audio (play,Audio)
@@ -153,9 +153,10 @@ putObj c (conx,cony) bmps (Obj ro (ox,oy) sc ai) = do
 putPoint :: Canvas -> Pos -> Color -> IO ()
 putPoint c (x,y) col = drawCircle c (CRect x y 10 10) 1 (col,col)
 
-putImg :: Canvas -> Pos -> Pos -> Bmps -> Int -> IO ()
-putImg c (conx,cony) (x,y) (imgs,_,_) pNum = do
-  renderOnTop c $ translate (conx+x,cony+y) $ scale (1,1) $ draw (imgs!!pNum) (0,0)
+putImg :: Canvas -> Pos -> Pos -> Bmps -> Int -> Double -> IO ()
+putImg c (conx,cony) (x,y) (imgs,_,_) pNum pop = do
+  renderOnTop c $ translate (conx+x,cony+y) $ opacity pop 
+                $ scale (1,1) $ draw (imgs!!pNum) (0,0)
 
 putCon :: Canvas -> Double -> Bmps -> Con -> IO ()
 putCon c cvH bmps con = if not (visible con) then return () else do 
@@ -178,6 +179,7 @@ putCon c cvH bmps con = if not (visible con) then return () else do
       pocos = ponCos con
       pcos = map (chColors !!) pocos
       pnums = picNums con
+      pops = picOps con
       zus = zukei con
       (_,wbmp,_) = bmps
   case border con of
@@ -185,8 +187,8 @@ putCon c cvH bmps con = if not (visible con) then return () else do
     Round -> drawRoundRect c rec 3 (bcol,fcol) 
     Circle -> drawCircle c rec 3 (bcol,fcol) 
     _ -> return ()
-  mapM_ (\(pnum,(pcx,pcy)) -> putImg c (cx,cy) (pcx,pcy) bmps pnum)
-                                  $ zip pnums pcpos
+  mapM_ (\(pnum,(pcx,pcy),pop) -> putImg c (cx,cy) (pcx,pcy) bmps pnum pop)
+                                  $ zip3 pnums pcpos pops
   mapM_ (\case
             ZSankaku r3 tp frs isa -> putSankaku c rec r3 tp frs isa
             _ -> return ()) zus
@@ -301,7 +303,7 @@ putLettersV :: Canvas -> [Bitmap] -> Color -> Bool -> TxType -> Bool -> Fsize
 putLettersV _ _ _ _ _ _ _ _ _ _ _ [] = return ()
 putLettersV c wbmp col ie tp al fz sz@(w,h) miq cln (pd,qd) (x:xs) = do
   let fzD = fromIntegral fz 
-      ltw = fzD * 1.2
+      ltw = fzD * 1.3
       lth = fzD * 1.1 
       mll = floor (h/lth) - 2 -- max letter length
   case x of 
@@ -326,7 +328,8 @@ putLettersV c wbmp col ie tp al fz sz@(w,h) miq cln (pd,qd) (x:xs) = do
             (rpd,rqd) = getRubiPos (pd,qd) miq ltw lth fzD mll
             rfz = div fz 3
             rfzD = fromIntegral rfz
-            rlth = rfzD * 1.1
+           -- rlth = rfzD * 1.1
+            rlth = rfzD 
         mapM_ (\(i,ch)-> putLet c col rfz 0 (rpd,rqd+i*rlth) ch) (zip [0..] rubi) 
         putLettersV c wbmp col ie tp al fz sz miq cln (pd,qd) xxs
     _     -> do 

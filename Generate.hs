@@ -157,7 +157,7 @@ genNextCon cvSz idNum = genBtCon cvSz idNum 1 6 5 "つぎへ"
 
 genKanjiPreviewCons :: Size -> String -> [Con]
 genKanjiPreviewCons cvSz@(cW,_) str =
-  let rec = genKamokuMonRect cvSz
+  let rec = genKamokuMonRect cvSz False
       fsz = 30; fsD = fromIntegral fsz
       (mon,ans) = toMon str
       tx = "問題は\r"++mon++"\r答へは\r"++ans++"\rとなります"
@@ -168,10 +168,10 @@ genKanjiPreviewCons cvSz@(cW,_) str =
       bkcon = genBackCon cvSz 2 Intro 
    in [ncon,okcon,bkcon]
 
-genKamokuMonRect :: Size -> CRect
-genKamokuMonRect (cW,cH) =
+genKamokuMonRect :: Size -> Bool -> CRect
+genKamokuMonRect (cW,cH) b =
   let mgnX = cW/8; mgnY =cH/15
-      conW = cW*9/10; conH = cH*3/4
+      conW = cW*9/10; conH = if b then cH*14/15 else cH*3/4
    in CRect mgnX mgnY conW conH
 
 genKamokuMonCons :: Size -> Bool -> Int -> [Int] -> [Int] -> Mdts -> [Con]
@@ -210,7 +210,6 @@ genKamokuMonAllCons :: Int -> Int -> String -> Int -> Int -> Pos -> Zu
                            -> Size -> Bool -> Int -> [Int] -> [Int] -> Mdts -> [Con]
 genKamokuMonAllCons ia lv tx fsz pNum mPos zu cvSz@(cW,_) isa qn clK msK mdts =
   let fsD = fromIntegral fsz
-      rec = genKamokuMonRect cvSz 
       nqn = qn+1
       (mdLen,isChi,isSan,isZuk,isDok) = case mdts of
         Mkn kns _ -> (length kns,False,False,False,False) 
@@ -218,6 +217,12 @@ genKamokuMonAllCons ia lv tx fsz pNum mPos zu cvSz@(cW,_) isa qn clK msK mdts =
         Msn sns -> (length sns,False,True,False,False)
         Mzu zks -> (length zks,False,False,True,False)
         Mdk dks -> (length dks,False,False,False,True)
+      rec = genKamokuMonRect cvSz isDok 
+      pop                     -- picture opacity
+        | not isa = 1 
+        | isZuk = 1
+        | isDok = 0.3
+        | otherwise = 0.7
       ev = if mdLen == nqn then Kamoku lv nqn mdts else KamokuMon isa nqn mdts 
       bev = if qn==0 then Kamoku lv mdLen mdts else KamokuMon isa (qn-1) mdts 
       baseCon = emCon{conID=0,cRec=rec,border=NoBord
@@ -227,11 +232,11 @@ genKamokuMonAllCons ia lv tx fsz pNum mPos zu cvSz@(cW,_) isa qn clK msK mdts =
                           ,clEv=NoEvent}
       ncon
          | isChi = baseCon {picPos=[(0,0)],ponPos=[mPos],ponCos=[3]
-                           ,picSize=[(300,300)],picNums=[pNum]}
+                           ,picSize=[(300,300)],picNums=[pNum],picOps=[pop]}
          | isSan = baseCon {alpDir=[True],txtCos=[1]}
          | isZuk = baseCon {txtPos=[(cW-fsD*4,-fsD)],zukei=[zu]}
-         | isDok = baseCon {txtCos=[10],picPos=[(0,-15)]
-                           ,picSize=[(300,300)],picNums=[pNum]}
+         | isDok = baseCon {txtCos=[10],txtFsz=[30],picPos=[(0,-5)]
+                           ,picSize=[(300,300)],picNums=[pNum],picOps=[pop]}
          | otherwise = baseCon
       btcon = if isDok then genMiniNextCon cvSz 1 ev else genNextCon cvSz 1 ev
       bkcon = genBackCon cvSz 2 bev 
