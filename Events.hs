@@ -108,7 +108,8 @@ evMust ia st = let mustK = mstk st
 
 evKamokuMon :: Size -> Bool -> Int -> Mdts -> State -> State
 evKamokuMon cvSz isa qn mdts st =
-                 st{cons=genKamokuMonCons cvSz isa qn (clik st) (mstk st) mdts}
+                 st{cons=genKamokuMonCons cvSz isa qn (clik st) (mstk st) mdts
+                   ,lsa=NoLSA}
 
 evKamoku :: Size -> Int -> Int -> Mdts -> State -> IO State
 evKamoku cvSz _ qn (Mkn kns _) st = do                  -- Kanji 
@@ -116,12 +117,13 @@ evKamoku cvSz _ qn (Mkn kns _) st = do                  -- Kanji
   let mustK = mstk st
   let lngMst = length mustK
   let nKmns = kanmons ++ knjs st
-  let kanmonsC = map fst $ filter (\(_,i)-> i `notElem` clearK) (zip nKmns [0..]) 
+  let kanmonsC = map fst $
+       filter (\(_,i)-> i `notElem` clearK && i `notElem` mustK) (zip nKmns [0..]) 
   let lngMon = length kanmonsC
   let qn'
-        | null kanmonsC = 0
+        | null kanmonsC = lngMst 
         | qn<1 = 1
-        | qn>lngMon = lngMon 
+        | qn>lngMon = lngMon + lngMst 
         | otherwise = qn
   nkns <- if null kns then do
                iLst <- getRanList lngMst lngMst 
@@ -136,7 +138,8 @@ evKamoku cvSz _ qn (Mkn kns _) st = do                  -- Kanji
                    return (kns0++kns1)
                       else return kns 
   let ncos = genKamokuCons cvSz 0 qn' (Mkn nkns nKmns)
-  return st{cons=ncos,gaus=[genKGauge cvSz (length clearK) nKmns]}
+  let nlsa = Save ClData (genSaveData ClData st)
+  return st{cons=ncos,gaus=[genKGauge cvSz (length clearK) nKmns],lsa=nlsa}
 evKamoku cvSz _ qn (Mch kns) st = do                    -- Chiri 
   let qn'
         | qn<1 = 1

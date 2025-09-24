@@ -345,10 +345,10 @@ genIntroCons cvSz@(cW,cH) =
       rscCon = genResetCon cvSz (cW*22/25,cH/45) ClData 3 
       addCon = genAddDataCon cvSz (cW*22/25,cH*20/45) 4
       rskCon = genResetCon cvSz (cW/25,cH*20/45) KData 5 
-      cnsv = genClearSaveCon cvSz 6 
+--      cnsv = genClearSaveCon cvSz 6 
       nextCon = genMiniNextCon cvSz 7 Intro2
       cons = genUDCons cvSz 4 bcpr tcpr True txpr evpr bcev
-   in cons++[rscCon,addCon,rskCon,cnsv,nextCon]
+   in cons++[rscCon,addCon,rskCon,nextCon]
 
 genIntro2Cons :: Size -> [Con]
 genIntro2Cons cvSz@(cW,cH) =
@@ -360,10 +360,10 @@ genIntro2Cons cvSz@(cW,cH) =
       rscCon = genResetCon cvSz (cW*22/25,cH/45) ClData 3 
 --      addCon = genAddDataCon cvSz (cW*22/25,cH*20/45) 4
 --      rskCon = genResetCon cvSz (cW/25,cH*20/45) KData 5 
-      cnsv = genClearSaveCon cvSz 6 
+--      cnsv = genClearSaveCon cvSz 6 
       backCon = genBackCon cvSz 7 Intro
       cons = genUDCons cvSz 4 bcpr tcpr True txpr evpr bcev
-   in cons++[rscCon,cnsv,backCon]
+   in cons++[rscCon,backCon]
 
 genNoticeCon :: Size -> Nt -> Con
 genNoticeCon (cW,cH) (Nt i flco tx ev) = 
