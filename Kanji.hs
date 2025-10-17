@@ -5,7 +5,7 @@ import qualified Data.Text as T
 import File (fileRead, fileWrite)
 
 inputFile :: FilePath
-inputFile = "Texts/kanji.txt"
+inputFile = "Texts/kanji2.txt"
  
 outputFile :: FilePath
 outputFile = "KanjiM.hs"
